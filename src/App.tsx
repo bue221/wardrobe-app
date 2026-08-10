@@ -32,7 +32,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<Tab>('wardrobe');
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-white flex">
+    <div className="min-h-dvh bg-zinc-950 text-white flex">
       {/* Desktop sidebar */}
       <aside className="hidden md:flex flex-col w-56 bg-zinc-900 border-r border-zinc-800 p-6 gap-2 sticky top-0 h-screen">
         <div className="mb-6">
@@ -58,25 +58,28 @@ export default function App() {
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 flex flex-col">
-        <div className="flex-1 p-4 md:p-8 mb-nav md:mb-0 max-w-3xl w-full mx-auto">
+      <main className="flex-1 min-h-dvh md:min-h-0">
+        <div className="p-4 md:p-8 pb-28 md:pb-8 max-w-3xl w-full mx-auto">
           {activeTab === 'wardrobe' && <WardrobePage />}
           {activeTab === 'outfit' && <OutfitPage />}
           {activeTab === 'favorites' && <FavoritesPage />}
         </div>
-
-        {/* Mobile bottom nav */}
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-zinc-900/95 backdrop-blur border-t border-zinc-800 flex justify-around pt-1 pb-safe z-30">
-          {TABS.map((tab) => (
-            <NavItem
-              key={tab.id}
-              tab={tab}
-              active={activeTab === tab.id}
-              onClick={() => setActiveTab(tab.id)}
-            />
-          ))}
-        </nav>
       </main>
+
+      {/* Mobile bottom nav — fixed, outside main so it never affects layout */}
+      <nav
+        className="md:hidden fixed bottom-0 left-0 right-0 bg-zinc-900/95 backdrop-blur-md border-t border-zinc-800 flex justify-around pt-1 z-30"
+        style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+      >
+        {TABS.map((tab) => (
+          <NavItem
+            key={tab.id}
+            tab={tab}
+            active={activeTab === tab.id}
+            onClick={() => setActiveTab(tab.id)}
+          />
+        ))}
+      </nav>
     </div>
   );
 }

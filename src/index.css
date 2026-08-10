@@ -19,11 +19,4 @@
     display: none;
   }
 
-  .pb-safe {
-    padding-bottom: env(safe-area-inset-bottom);
-  }
-
-  .mb-nav {
-    margin-bottom: calc(4rem + env(safe-area-inset-bottom));
-  }
 }

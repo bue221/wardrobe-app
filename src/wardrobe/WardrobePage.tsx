@@ -43,19 +43,13 @@ export function WardrobePage() {
 
       {/* Stats strip */}
       {!loading && items.length > 0 && (
-        <div className="flex gap-3 text-xs text-zinc-500">
+        <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-zinc-500">
           <span>{items.length} {items.length === 1 ? 'prenda' : 'prendas'}</span>
           {totalOutfits > 0 && (
-            <>
-              <span>·</span>
-              <span>{totalOutfits} {totalOutfits === 1 ? 'outfit guardado' : 'outfits guardados'}</span>
-            </>
+            <span>{totalOutfits} {totalOutfits === 1 ? 'outfit guardado' : 'outfits guardados'}</span>
           )}
           {topItem && (
-            <>
-              <span>·</span>
-              <span>⭐ {topItem.name}</span>
-            </>
+            <span className="truncate max-w-[140px]">⭐ {topItem.name}</span>
           )}
         </div>
       )}
