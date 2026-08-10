@@ -36,7 +36,7 @@ export function WardrobePage() {
       {loading ? (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="bg-slate-800 rounded-2xl aspect-[3/4] animate-pulse" />
+            <div key={i} className="bg-zinc-800 rounded-2xl aspect-[3/4] animate-pulse" />
           ))}
         </div>
       ) : (

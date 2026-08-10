@@ -44,21 +44,26 @@ export function UploadForm({ onAdd, onClose }: UploadFormProps) {
 
   return (
     <div className="fixed inset-0 bg-black/70 z-40 flex items-end md:items-center justify-center p-0 md:p-4">
-      <div className="bg-slate-900 rounded-t-3xl md:rounded-3xl w-full md:max-w-md p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+      <div className="bg-zinc-900 rounded-t-3xl md:rounded-3xl w-full md:max-w-md p-6 space-y-4 max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center">
           <h2 className="text-white font-semibold text-lg">Agregar prenda</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-white">✕</button>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 flex items-center justify-center rounded-full bg-zinc-800 text-zinc-400 hover:text-white transition-colors"
+          >
+            ✕
+          </button>
         </div>
 
         {/* Image picker */}
         <div
           onClick={() => inputRef.current?.click()}
-          className="w-full aspect-[3/2] bg-slate-800 rounded-2xl flex items-center justify-center overflow-hidden cursor-pointer hover:bg-slate-700 transition-colors"
+          className="w-full aspect-[4/3] bg-zinc-800 rounded-2xl flex items-center justify-center overflow-hidden cursor-pointer hover:bg-zinc-700 transition-colors"
         >
           {preview ? (
             <img src={preview} alt="preview" className="w-full h-full object-cover" />
           ) : (
-            <div className="text-slate-500 text-center">
+            <div className="text-zinc-500 text-center">
               <div className="text-4xl mb-2">📷</div>
               <p className="text-sm">Toca para elegir foto</p>
             </div>
@@ -79,7 +84,7 @@ export function UploadForm({ onAdd, onClose }: UploadFormProps) {
           placeholder="Nombre (ej: Remera blanca básica)"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="w-full bg-slate-800 text-white rounded-xl px-4 py-3 text-sm placeholder:text-slate-500 outline-none focus:ring-2 focus:ring-violet-500"
+          className="w-full bg-zinc-800 text-white rounded-xl px-4 py-3 text-sm placeholder:text-zinc-500 outline-none focus:ring-2 focus:ring-violet-500"
         />
 
         {/* Category */}
@@ -88,10 +93,10 @@ export function UploadForm({ onAdd, onClose }: UploadFormProps) {
             <button
               key={cat.value}
               onClick={() => setCategory(cat.value)}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+              className={`px-3 py-2 rounded-full text-sm font-medium transition-colors ${
                 category === cat.value
-                  ? 'bg-violet-600 text-white'
-                  : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                  ? 'bg-gradient-to-r from-violet-600 to-fuchsia-500 text-white'
+                  : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
               }`}
             >
               {cat.emoji} {cat.label}
@@ -101,16 +106,16 @@ export function UploadForm({ onAdd, onClose }: UploadFormProps) {
 
         {/* Colors */}
         <div>
-          <p className="text-slate-400 text-xs mb-2">Colores (opcional)</p>
+          <p className="text-zinc-400 text-xs mb-2">Colores (opcional)</p>
           <div className="flex gap-2 flex-wrap">
             {PRESET_COLORS.map((color) => (
               <button
                 key={color}
                 onClick={() => toggleColor(color)}
-                className={`px-2 py-1 rounded-full text-xs transition-colors ${
+                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
                   colors.includes(color)
-                    ? 'bg-violet-600 text-white'
-                    : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                    ? 'bg-gradient-to-r from-violet-600 to-fuchsia-500 text-white'
+                    : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
                 }`}
               >
                 {color}
@@ -122,7 +127,7 @@ export function UploadForm({ onAdd, onClose }: UploadFormProps) {
         <button
           onClick={handleSubmit}
           disabled={!file || !name.trim() || saving}
-          className="w-full py-3 bg-violet-600 text-white rounded-xl font-semibold text-sm disabled:opacity-40 hover:bg-violet-500 transition-colors"
+          className="w-full py-3.5 bg-gradient-to-r from-violet-600 to-fuchsia-500 text-white rounded-xl font-semibold text-sm disabled:opacity-40 hover:from-violet-500 hover:to-fuchsia-400 transition-all shadow-lg shadow-violet-900/30"
         >
           {saving ? 'Guardando...' : 'Guardar prenda'}
         </button>

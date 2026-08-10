@@ -15,7 +15,7 @@ export function ClothingCard({ item, onDelete, selected, onClick }: ClothingCard
   return (
     <div
       onClick={onClick}
-      className={`relative rounded-2xl overflow-hidden bg-slate-800 shadow-md cursor-pointer transition-all duration-150 ${
+      className={`relative rounded-2xl overflow-hidden bg-zinc-800 shadow-md cursor-pointer transition-all duration-150 ${
         selected ? 'ring-2 ring-violet-400 scale-[1.02]' : 'hover:scale-[1.01]'
       }`}
     >
@@ -24,15 +24,15 @@ export function ClothingCard({ item, onDelete, selected, onClick }: ClothingCard
         alt={item.name}
         className="w-full aspect-[3/4] object-cover"
       />
-      <div className="p-2">
+      <div className="p-2.5">
         <p className="text-white text-xs font-medium truncate">{item.name}</p>
-        <span className="text-slate-400 text-[10px]">
+        <span className="text-zinc-400 text-[11px]">
           {categoryInfo?.emoji} {categoryInfo?.label}
         </span>
       </div>
       <button
         onClick={(e) => { e.stopPropagation(); onDelete(item.id); }}
-        className="absolute top-2 right-2 w-6 h-6 bg-black/50 rounded-full text-white text-xs flex items-center justify-center hover:bg-red-600 transition-colors"
+        className="absolute top-2 right-2 w-8 h-8 bg-black/60 rounded-full text-white text-sm flex items-center justify-center hover:bg-red-600 transition-colors"
         aria-label="Eliminar prenda"
       >
         ✕

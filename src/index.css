@@ -4,6 +4,10 @@
   * {
     box-sizing: border-box;
   }
+
+  body {
+    -webkit-tap-highlight-color: transparent;
+  }
 }
 
 @layer utilities {
@@ -13,5 +17,13 @@
   }
   .no-scrollbar::-webkit-scrollbar {
     display: none;
+  }
+
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .mb-nav {
+    margin-bottom: calc(4rem + env(safe-area-inset-bottom));
   }
 }

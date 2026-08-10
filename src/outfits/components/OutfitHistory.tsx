@@ -25,7 +25,7 @@ function OutfitCard({ outfit, allItems, onDelete }: {
   });
 
   return (
-    <div className="bg-slate-800 rounded-2xl p-3 space-y-2">
+    <div className="bg-zinc-800 rounded-2xl p-3 space-y-2">
       <div className="flex gap-1.5 overflow-x-auto no-scrollbar">
         {items.map((item) => (
           <BlobImage
@@ -37,13 +37,13 @@ function OutfitCard({ outfit, allItems, onDelete }: {
         ))}
       </div>
       {outfit.aiNote && (
-        <p className="text-slate-400 text-[11px] italic">" {outfit.aiNote} "</p>
+        <p className="text-zinc-400 text-[11px] italic">" {outfit.aiNote} "</p>
       )}
       <div className="flex justify-between items-center">
-        <span className="text-slate-500 text-[10px]">{date}</span>
+        <span className="text-zinc-500 text-xs">{date}</span>
         <button
           onClick={() => onDelete(outfit.id)}
-          className="text-slate-500 hover:text-red-400 text-xs transition-colors"
+          className="text-zinc-500 hover:text-red-400 text-xs transition-colors py-1 px-2"
         >
           Eliminar
         </button>
@@ -59,7 +59,7 @@ export function OutfitHistory({ outfits, allItems, onLoad, onDelete }: OutfitHis
 
   if (outfits.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 text-slate-500 gap-3">
+      <div className="flex flex-col items-center justify-center py-20 text-zinc-500 gap-3">
         <span className="text-5xl">🌟</span>
         <p className="text-sm text-center">Todavía no guardaste ningún outfit.</p>
       </div>

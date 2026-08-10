@@ -15,10 +15,10 @@ export function FilterBar({ active, onChange }: FilterBarProps) {
         <button
           key={cat.value}
           onClick={() => onChange(cat.value)}
-          className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+          className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
             active === cat.value
               ? 'bg-violet-600 text-white'
-              : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+              : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
           }`}
         >
           {cat.emoji} {cat.label}
