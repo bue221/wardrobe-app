@@ -5,11 +5,12 @@ import { BlobImage } from '../../shared/components/BlobImage';
 interface ClothingCardProps {
   item: ClothingItem;
   onDelete: (id: string) => void;
+  usageCount?: number;
   selected?: boolean;
   onClick?: () => void;
 }
 
-export function ClothingCard({ item, onDelete, selected, onClick }: ClothingCardProps) {
+export function ClothingCard({ item, onDelete, usageCount = 0, selected, onClick }: ClothingCardProps) {
   const categoryInfo = CATEGORIES.find((c) => c.value === item.category);
 
   return (
@@ -30,6 +31,11 @@ export function ClothingCard({ item, onDelete, selected, onClick }: ClothingCard
           {categoryInfo?.emoji} {categoryInfo?.label}
         </span>
       </div>
+      {usageCount > 0 && (
+        <span className="absolute top-2 left-2 bg-black/60 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+          🔥 {usageCount}
+        </span>
+      )}
       <button
         onClick={(e) => { e.stopPropagation(); onDelete(item.id); }}
         className="absolute top-2 right-2 w-8 h-8 bg-black/60 rounded-full text-white text-sm flex items-center justify-center hover:bg-red-600 transition-colors"

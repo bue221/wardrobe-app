@@ -4,11 +4,12 @@ import { ClothingCard } from './ClothingCard';
 interface ClothingGridProps {
   items: ClothingItem[];
   onDelete: (id: string) => void;
+  usageMap?: Record<string, number>;
   selectedIds?: string[];
   onSelect?: (id: string) => void;
 }
 
-export function ClothingGrid({ items, onDelete, selectedIds, onSelect }: ClothingGridProps) {
+export function ClothingGrid({ items, onDelete, usageMap, selectedIds, onSelect }: ClothingGridProps) {
   if (items.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-zinc-500 gap-3">
@@ -25,6 +26,7 @@ export function ClothingGrid({ items, onDelete, selectedIds, onSelect }: Clothin
           key={item.id}
           item={item}
           onDelete={onDelete}
+          usageCount={usageMap?.[item.id] ?? 0}
           selected={selectedIds?.includes(item.id)}
           onClick={() => onSelect?.(item.id)}
         />
