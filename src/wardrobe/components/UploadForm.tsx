@@ -44,7 +44,10 @@ export function UploadForm({ onAdd, onClose }: UploadFormProps) {
 
   return (
     <div className="fixed inset-0 bg-black/70 z-40 flex items-end md:items-center justify-center p-0 md:p-4">
-      <div className="bg-zinc-900 rounded-t-3xl md:rounded-3xl w-full md:max-w-md p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+      <div
+        className="bg-zinc-900 rounded-t-3xl md:rounded-3xl w-full md:max-w-md p-6 space-y-4 max-h-[90dvh] overflow-y-auto"
+        style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom, 1.5rem))' }}
+      >
         <div className="flex justify-between items-center">
           <h2 className="text-white font-semibold text-lg">Agregar prenda</h2>
           <button
@@ -73,7 +76,6 @@ export function UploadForm({ onAdd, onClose }: UploadFormProps) {
           ref={inputRef}
           type="file"
           accept="image/*"
-          capture="environment"
           onChange={handleFileChange}
           className="hidden"
         />

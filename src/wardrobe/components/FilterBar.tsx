@@ -10,7 +10,7 @@ export function FilterBar({ active, onChange }: FilterBarProps) {
   const all = [{ value: 'all' as const, label: 'Todo', emoji: '🗂️' }, ...CATEGORIES];
 
   return (
-    <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+    <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar" style={{ touchAction: 'pan-x' }}>
       {all.map((cat) => (
         <button
           key={cat.value}

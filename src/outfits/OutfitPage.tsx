@@ -26,9 +26,12 @@ export function OutfitPage() {
       <h1 className="text-white text-xl font-bold">Generador de Outfits</h1>
 
       {items.length === 0 && (
-        <div className="text-center text-zinc-500 py-12">
-          <span className="text-5xl block mb-3">👕</span>
-          <p className="text-sm">Primero agregá prendas en tu armario.</p>
+        <div className="flex flex-col items-center justify-center py-20 gap-4 text-center">
+          <span className="text-6xl">✨</span>
+          <div>
+            <p className="text-white font-semibold">Todavía no tenés prendas</p>
+            <p className="text-zinc-500 text-sm mt-1">Primero agregá ropa en tu armario para poder generar outfits.</p>
+          </div>
         </div>
       )}
 
@@ -44,12 +47,6 @@ export function OutfitPage() {
               🎲 Outfit Aleatorio
             </button>
 
-            {webGpuSupported === null && (
-              <div className="w-full py-4 bg-zinc-800 rounded-2xl text-zinc-500 text-sm text-center">
-                Detectando soporte de IA...
-              </div>
-            )}
-
             {webGpuSupported === true && (
               <button
                 onClick={() => generateAI(items)}
@@ -58,12 +55,6 @@ export function OutfitPage() {
               >
                 ✨ Generar con IA (WebLLM)
               </button>
-            )}
-
-            {webGpuSupported === false && (
-              <div className="w-full py-3 bg-zinc-800 rounded-2xl text-zinc-500 text-xs text-center px-4">
-                Tu navegador no soporta WebGPU. Usá Chrome/Edge en desktop para la IA.
-              </div>
             )}
           </div>
 

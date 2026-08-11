@@ -20,7 +20,10 @@ export function Toast({ message, type = 'info', onClose, duration = 3500 }: Toas
   };
 
   return (
-    <div className={`fixed bottom-24 left-1/2 -translate-x-1/2 z-50 px-4 py-3 rounded-xl text-white text-sm shadow-xl max-w-xs text-center ${colors[type]}`}>
+    <div
+      className={`fixed left-1/2 -translate-x-1/2 z-50 px-4 py-3 rounded-xl text-white text-sm shadow-xl max-w-xs text-center ${colors[type]}`}
+      style={{ bottom: 'calc(6rem + env(safe-area-inset-bottom, 0px))' }}
+    >
       {message}
     </div>
   );

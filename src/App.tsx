@@ -15,13 +15,10 @@ function NavItem({ tab, active, onClick }: { tab: typeof TABS[number]; active: b
   return (
     <button
       onClick={onClick}
-      className={`flex flex-col items-center gap-0.5 px-5 py-2 transition-colors relative ${
-        active ? 'text-violet-400' : 'text-zinc-500 hover:text-zinc-300'
+      className={`flex flex-col items-center gap-0.5 px-5 py-2.5 rounded-2xl transition-all ${
+        active ? 'text-violet-400 bg-zinc-700/50' : 'text-zinc-500 hover:text-zinc-300'
       }`}
     >
-      {active && (
-        <span className="absolute top-0 left-1/2 -translate-x-1/2 w-6 h-0.5 rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-500" />
-      )}
       <span className="text-xl">{tab.emoji}</span>
       <span className="text-[11px] font-medium">{tab.label}</span>
     </button>

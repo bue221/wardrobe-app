@@ -1,5 +1,25 @@
 @import "tailwindcss";
 
+@theme {
+  /* Forest green palette — overrides zinc and violet/fuchsia accent tokens */
+  --color-zinc-950: #1A3220;
+  --color-zinc-900: #1F3D26;
+  --color-zinc-800: #2B5130;
+  --color-zinc-700: #3A6640;
+  --color-zinc-600: #4A7A52;
+  --color-zinc-500: #6B9970;
+  --color-zinc-400: #9EB585;
+  --color-zinc-300: #C8D9B8;
+
+  --color-violet-600: #4A7A52;
+  --color-violet-500: #4A7A52;
+  --color-violet-400: #9EB585;
+  --color-violet-900: #1F3D26;
+
+  --color-fuchsia-500: #5C8F63;
+  --color-fuchsia-400: #7DB584;
+}
+
 @layer base {
   * {
     box-sizing: border-box;

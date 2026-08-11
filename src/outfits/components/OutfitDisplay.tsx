@@ -45,22 +45,25 @@ export function OutfitDisplay({ selectedIds, allItems, note, onSave }: OutfitDis
 
   if (selectedItems.length === 0) return null;
 
+  const colClass = selectedItems.length >= 4 ? 'grid-cols-4' : 'grid-cols-3';
+
   return (
     <div className="bg-zinc-800 rounded-2xl p-4 space-y-4">
       {/* Clothing grid */}
-      <div className="grid grid-cols-3 gap-2">
+      <div className={`grid ${colClass} gap-2`}>
         {selectedItems.map((item) => (
           <div key={item.id} className="rounded-xl overflow-hidden bg-zinc-700">
-            <BlobImage blob={item.imageBlob} alt={item.name} className="w-full aspect-square object-cover" />
-            <p className="text-[11px] text-zinc-400 text-center py-1 truncate px-1">{item.name}</p>
+            <BlobImage blob={item.imageBlob} alt={item.name} className="w-full aspect-[3/4] object-cover" />
+            <p className="text-[10px] text-zinc-400 text-center py-1 truncate px-1">{item.name}</p>
           </div>
         ))}
       </div>
 
       {note && (
-        <p className="text-zinc-300 text-sm italic border-l-2 border-violet-500 pl-3">
-          "{note}"
-        </p>
+        <div className="flex items-start gap-2 bg-zinc-700/50 rounded-xl px-3 py-2">
+          <span className="text-sm">✨</span>
+          <p className="text-zinc-300 text-sm italic">"{note}"</p>
+        </div>
       )}
 
       {/* Generate image button */}

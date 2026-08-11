@@ -10,6 +10,17 @@ interface OutfitHistoryProps {
   onDelete: (id: string) => void;
 }
 
+const currentYear = new Date().getFullYear();
+
+function formatDate(timestamp: number): string {
+  const d = new Date(timestamp);
+  return d.toLocaleDateString('es-AR', {
+    day: 'numeric',
+    month: 'short',
+    ...(d.getFullYear() !== currentYear ? { year: 'numeric' } : {}),
+  });
+}
+
 function OutfitCard({ outfit, allItems, onDelete }: {
   outfit: SavedOutfit;
   allItems: ClothingItem[];
@@ -20,34 +31,36 @@ function OutfitCard({ outfit, allItems, onDelete }: {
     [outfit.clothingIds, allItems]
   );
 
-  const date = new Date(outfit.createdAt).toLocaleDateString('es-AR', {
-    day: 'numeric', month: 'short',
-  });
-
   return (
-    <div className="bg-zinc-800 rounded-2xl p-3 space-y-2">
-      <div className="flex gap-1.5 overflow-x-auto no-scrollbar">
+    <div className="relative bg-zinc-800 rounded-2xl p-3 space-y-2">
+      {/* Delete button */}
+      <button
+        onClick={() => onDelete(outfit.id)}
+        className="absolute top-2 right-2 w-9 h-9 bg-zinc-700 hover:bg-red-600 rounded-full text-zinc-400 hover:text-white text-sm flex items-center justify-center transition-colors z-10"
+        aria-label="Eliminar outfit"
+      >
+        ✕
+      </button>
+
+      <div className="flex gap-2 overflow-x-auto no-scrollbar pr-10" style={{ touchAction: 'pan-x' }}>
         {items.map((item) => (
           <BlobImage
             key={item.id}
             blob={item.imageBlob}
             alt={item.name}
-            className="w-16 h-20 object-cover rounded-lg flex-shrink-0"
+            className="w-20 h-28 object-cover rounded-xl flex-shrink-0"
           />
         ))}
       </div>
+
       {outfit.aiNote && (
-        <p className="text-zinc-400 text-[11px] italic">" {outfit.aiNote} "</p>
+        <div className="flex items-start gap-1.5 bg-zinc-700/50 rounded-lg px-2.5 py-1.5">
+          <span className="text-xs">✨</span>
+          <p className="text-zinc-400 text-[11px] italic">"{outfit.aiNote}"</p>
+        </div>
       )}
-      <div className="flex justify-between items-center">
-        <span className="text-zinc-500 text-xs">{date}</span>
-        <button
-          onClick={() => onDelete(outfit.id)}
-          className="text-zinc-500 hover:text-red-400 text-xs transition-colors py-1 px-2"
-        >
-          Eliminar
-        </button>
-      </div>
+
+      <p className="text-zinc-500 text-xs">{formatDate(outfit.createdAt)}</p>
     </div>
   );
 }
@@ -59,9 +72,12 @@ export function OutfitHistory({ outfits, allItems, onLoad, onDelete }: OutfitHis
 
   if (outfits.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 text-zinc-500 gap-3">
-        <span className="text-5xl">🌟</span>
-        <p className="text-sm text-center">Todavía no guardaste ningún outfit.</p>
+      <div className="flex flex-col items-center justify-center py-20 gap-4 text-center">
+        <span className="text-6xl">🌟</span>
+        <div>
+          <p className="text-white font-semibold">Sin outfits guardados</p>
+          <p className="text-zinc-500 text-sm mt-1">Generá un outfit y guardalo para verlo acá.</p>
+        </div>
       </div>
     );
   }
