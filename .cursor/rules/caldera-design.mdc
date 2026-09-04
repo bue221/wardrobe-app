@@ -1,0 +1,16 @@
+---
+description: Caldera is the only visual system. Apply on every conversation.
+alwaysApply: true
+---
+
+# Caldera + mobile-first
+
+Source of truth: `docs/design.md`. Product: `docs/PRD.md`.
+
+Before any UI, CSS, canvas, PWA chrome, or landing change:
+
+1. Read `.cursor/skills/caldera-ui/SKILL.md`
+2. Read `.cursor/skills/wardrobe-i18n-theme/SKILL.md` if copy or chrome colors change
+3. Read `.cursor/skills/wardrobe-mobile/SKILL.md` if layout, nav, or viewport is involved
+
+Forbidden: box-shadow, zinc/violet/fuchsia palettes, DM Sans Regular/Bold, Plasma Violet on controls, rectangular buttons, extra accent colors, desktop-first layouts.

@@ -1,0 +1,16 @@
+---
+description: Mobile-first layout, safe areas, and PWA chrome
+globs: src/**/*.tsx,index.html,public/manifest.json
+alwaysApply: false
+---
+
+# Mobile-first
+
+Design 390px first. `md:` is enhancement.
+
+- Touch targets ≥44px
+- App content `pb` must clear the bottom Limestone pill + `env(safe-area-inset-bottom)`
+- Landing hero: stacked headline + full-width halftone (not 50vw)
+- Sheets: `items-end` on mobile, centered on `md+`
+- `theme-color` follows resolved theme (Pumice light / Obsidian dark)
+- Grids: `grid-cols-2` default; add columns only at `md` / `lg`

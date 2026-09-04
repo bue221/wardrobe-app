@@ -1,0 +1,14 @@
+---
+description: Every copy change needs both locales; every UI change must work in light and dark.
+alwaysApply: true
+---
+
+# i18n + theme
+
+Before shipping strings or UI:
+
+1. Read `.cursor/skills/wardrobe-i18n-theme/SKILL.md`
+2. Put copy in `src/i18n/messages.ts` (`es` and `en`). Render with `t()`.
+3. Paint chrome with `bg-canvas` / `bg-surface` / `text-ink` / `border-ink`. Ember and Sulfur keep `text-obsidian`.
+
+Forbidden: hardcoded UI strings in JSX, a third locale, a new theme hex, page chrome using `bg-pumice` or `text-obsidian` as the canvas/ink pair.

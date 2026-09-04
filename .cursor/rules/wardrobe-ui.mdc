@@ -1,0 +1,25 @@
+---
+description: Caldera component recipes for React and CSS
+globs: src/**/*.{tsx,css}
+alwaysApply: false
+---
+
+# UI recipes
+
+Use `src/shared/ui/Button`, `Tag`, `HalftoneBlock`. Match `docs/design.md`. Semantic chrome: `bg-canvas`, `bg-surface`, `text-ink`.
+
+```tsx
+// Primary — Ember pill, Obsidian text (both themes)
+<button className="bg-ember text-obsidian rounded-pill py-3 px-6 font-dm-sans font-medium text-base">
+
+// Secondary — 40px radius, 1.5px ink
+<button className="border-[1.5px] border-ink text-ink rounded-card p-4 font-dm-sans font-medium">
+
+// Card
+<div className="bg-surface rounded-card p-6 md:p-10">
+
+// Tag
+<span className="bg-sulfur text-obsidian rounded-pill px-2.5 py-1 font-dm-sans font-medium text-xs">
+```
+
+Headings: `font-display uppercase tracking-[0.02em]`. No `shadow-*`. No `bg-zinc-*` / `from-violet-*`.
