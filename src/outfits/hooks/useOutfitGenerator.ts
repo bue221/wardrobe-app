@@ -2,14 +2,21 @@ import { useState, useCallback } from 'react';
 import type { ClothingItem } from '../../wardrobe/types';
 import type { SavedOutfit } from '../types';
 import { getEngine, resetEngine, toAiErrorKey } from '../../ai/WebLLMEngine';
-import { buildOutfitPrompt, buildRetryPrompt, parseOutfitResponse } from '../../ai/outfitPrompt';
+import {
+  buildOutfitJsonSchema,
+  buildOutfitPrompt,
+  buildRetryPrompt,
+  indexWardrobe,
+  parseOutfitResponse,
+  resolveOutfitSelection,
+} from '../../ai/outfitPrompt';
 import { saveOutfit, getAllOutfits, deleteOutfit } from '../../shared/db/wardrobeDB';
 import { t } from '../../i18n/i18n';
 import {
   groundOutfitNote,
   wardrobeHasCorePieces,
   randomOutfit,
-  sanitizeOutfitSelection,
+  completeOutfitSelection,
 } from '../utils/sanitizeOutfit';
 
 type InitProgressReport = { progress?: number; text?: string };
@@ -78,28 +85,52 @@ export function useOutfitGenerator() {
       const engine = await getEngine(onProgress);
       setStatus({ type: 'generating' });
 
-      const prompt = buildOutfitPrompt(items);
-      const response = await engine.chat.completions.create({
-        messages: [{ role: 'user', content: prompt }],
-        temperature: 0.3,
-        max_tokens: 320,
-      });
+      const index = indexWardrobe(items);
+      const prompt = buildOutfitPrompt(index);
+      const schema = buildOutfitJsonSchema(index);
+      engine.resetChat();
+
+      const messages = [{ role: 'user' as const, content: prompt }];
+      const baseRequest = {
+        messages,
+        temperature: 0.2,
+        max_tokens: 220,
+      };
+
+      let usedSchema = true;
+      let response;
+      try {
+        response = await engine.chat.completions.create({
+          ...baseRequest,
+          response_format: { type: 'json_object', schema },
+        });
+      } catch (schemaErr) {
+        console.error('WebLLM JSON schema unavailable, retrying unconstrained', schemaErr);
+        usedSchema = false;
+        engine.resetChat();
+        response = await engine.chat.completions.create(baseRequest);
+      }
 
       let raw = response.choices[0]?.message?.content ?? '';
       let selection = parseOutfitResponse(raw);
 
       if (!selection) {
-        const retry = await engine.chat.completions.create({
-          messages: [
-            { role: 'user', content: prompt },
-            { role: 'assistant', content: raw || '{}' },
-            { role: 'user', content: buildRetryPrompt() },
-          ],
-          temperature: 0.1,
-          max_tokens: 320,
-        });
-        raw = retry.choices[0]?.message?.content ?? '';
-        selection = parseOutfitResponse(raw);
+        try {
+          const retry = await engine.chat.completions.create({
+            messages: [
+              ...messages,
+              { role: 'assistant', content: raw || '{}' },
+              { role: 'user', content: buildRetryPrompt() },
+            ],
+            temperature: 0.1,
+            max_tokens: 220,
+            ...(usedSchema ? { response_format: { type: 'json_object' as const, schema } } : {}),
+          });
+          raw = retry.choices[0]?.message?.content ?? '';
+          selection = parseOutfitResponse(raw);
+        } catch (retryErr) {
+          console.error('WebLLM outfit retry failed', retryErr);
+        }
       }
 
       if (!selection) {
@@ -107,7 +138,8 @@ export function useOutfitGenerator() {
         return;
       }
 
-      const sanitized = sanitizeOutfitSelection(selection, items);
+      const resolved = resolveOutfitSelection(selection, index);
+      const sanitized = completeOutfitSelection(resolved, items);
       if (!sanitized.valid) {
         applyRandomFallback(t('outfit.aiFallback'));
         return;

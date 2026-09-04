@@ -125,6 +125,15 @@ export const es = {
   'upload.saveFailed': 'No se pudo guardar. Probá de nuevo.',
   'upload.saving': 'Guardando...',
   'upload.save': 'Guardar prenda',
+  'upload.analyzing': 'Leyendo la foto...',
+  'upload.hintReady': 'Sugerimos nombre, categoría y colores. Revisá y guardá.',
+  'upload.hintPickCategory': 'Sugerimos los colores. Elegí la categoría.',
+  'upload.autoName': '{piece} {color}',
+  'upload.piece.top': 'Remera',
+  'upload.piece.bottom': 'Pantalón',
+  'upload.piece.shoes': 'Zapatos',
+  'upload.piece.outer': 'Campera',
+  'upload.piece.accessory': 'Accesorio',
 
   'outfit.title': 'GENERADOR',
   'outfit.emptyTitle': 'SIN PRENDAS',
@@ -145,9 +154,9 @@ export const es = {
   'outfit.mine': 'MI OUTFIT',
   'outfit.imageFailed': 'No se pudo armar la imagen.',
   'outfit.shareFailed': 'No se pudo compartir.',
-  'outfit.viewImage': 'Ver como imagen',
-  'outfit.generatingImage': 'Generando imagen...',
-  'outfit.generatedAlt': 'Outfit generado',
+  'outfit.viewImage': 'Armar lookboard',
+  'outfit.generatingImage': 'Armando lookboard...',
+  'outfit.generatedAlt': 'Lookboard del outfit',
   'outfit.share': 'Compartir',
   'outfit.sharing': 'Compartiendo...',
   'outfit.regenerate': 'Regenerar',
@@ -167,21 +176,19 @@ export const es = {
   'ai.error.webgpu': 'Este dispositivo no puede correr la IA (WebGPU). Usá el outfit aleatorio.',
   'ai.error.network': 'Falló la descarga del modelo. Revisá la conexión e intentá de nuevo.',
   'ai.error.generic': 'La IA falló al cargar. Probá de nuevo o usá el outfit aleatorio.',
-  'ai.prompt': `Sos un stylist de moda. Abajo está el armario. Elegí una prenda por categoría para armar un look cohesivo. Respondé SOLO con JSON válido que coincida exactamente con este esquema (sin markdown):
-{"top":"<id o null>","bottom":"<id o null>","shoes":"<id o null>","outer":"<id o null>","accessory":"<id o null>","note":"<una frase en español explicando por qué combinan>"}
+  'ai.prompt': `Sos un stylist. Armá un look con el armario. Respondé SOLO JSON, sin markdown:
+{"top":"t1","bottom":"b1","shoes":"s1","outer":"none","accessory":"none","note":"una frase en español nombrando las prendas"}
 
-Armario:
+Armario (usá estos ids cortos, ej t1 / b1 / s1):
 {list}
 
 Reglas:
-- top, bottom y shoes son obligatorios (elegí un id de esa categoría; null solo si no hay prendas de esa categoría)
-- outer y accessory son opcionales
-- Un solo id por categoría; no repitas el mismo id
-- Usá únicamente ids de la lista
-- Elegí colores que se complementen
-- La nota debe estar en español (es-AR) y nombrar las prendas elegidas
-- Respondé SOLO con el objeto JSON, nada más`,
-  'ai.retry': 'Respondé únicamente con el objeto JSON del esquema pedido. Sin markdown, sin texto extra.',
+- top, bottom y shoes son obligatorios (un id de esa categoría)
+- outer y accessory: un id o "none"
+- No inventes ids. No uses UUID.
+- Colores que se complementen.
+- Nota en español (es-AR).`,
+  'ai.retry': 'SOLO el JSON. ids cortos de la lista (t1, b1, s1). outer/accessory pueden ser "none". Sin markdown.',
   'ai.defaultNote': 'Outfit armado con tu armario.',
 } as const;
 
@@ -311,6 +318,15 @@ export const en: Record<MessageKey, string> = {
   'upload.saveFailed': 'Could not save. Try again.',
   'upload.saving': 'Saving...',
   'upload.save': 'Save piece',
+  'upload.analyzing': 'Reading the photo...',
+  'upload.hintReady': 'We suggested a name, category, and colors. Check and save.',
+  'upload.hintPickCategory': 'We suggested the colors. Pick a category.',
+  'upload.autoName': '{color} {piece}',
+  'upload.piece.top': 'Tee',
+  'upload.piece.bottom': 'Trousers',
+  'upload.piece.shoes': 'Shoes',
+  'upload.piece.outer': 'Jacket',
+  'upload.piece.accessory': 'Accessory',
 
   'outfit.title': 'GENERATOR',
   'outfit.emptyTitle': 'NO PIECES',
@@ -331,9 +347,9 @@ export const en: Record<MessageKey, string> = {
   'outfit.mine': 'MY OUTFIT',
   'outfit.imageFailed': 'Could not build the image.',
   'outfit.shareFailed': 'Could not share.',
-  'outfit.viewImage': 'View as image',
-  'outfit.generatingImage': 'Generating image...',
-  'outfit.generatedAlt': 'Generated outfit',
+  'outfit.viewImage': 'Build lookboard',
+  'outfit.generatingImage': 'Building lookboard...',
+  'outfit.generatedAlt': 'Outfit lookboard',
   'outfit.share': 'Share',
   'outfit.sharing': 'Sharing...',
   'outfit.regenerate': 'Regenerate',
@@ -353,21 +369,19 @@ export const en: Record<MessageKey, string> = {
   'ai.error.webgpu': 'This device cannot run AI (WebGPU). Use the random outfit.',
   'ai.error.network': 'Model download failed. Check your connection and try again.',
   'ai.error.generic': 'AI failed to load. Try again or use the random outfit.',
-  'ai.prompt': `You are a fashion stylist. Below is the wardrobe. Pick one piece per category for a cohesive look. Reply ONLY with valid JSON that matches this schema exactly (no markdown):
-{"top":"<id or null>","bottom":"<id or null>","shoes":"<id or null>","outer":"<id or null>","accessory":"<id or null>","note":"<one English sentence explaining why they work>"}
+  'ai.prompt': `You are a stylist. Build a look from the wardrobe. Reply with JSON only, no markdown:
+{"top":"t1","bottom":"b1","shoes":"s1","outer":"none","accessory":"none","note":"one English sentence naming the pieces"}
 
-Wardrobe:
+Wardrobe (use these short ids, e.g. t1 / b1 / s1):
 {list}
 
 Rules:
-- top, bottom and shoes are required (pick an id from that category; null only if that category is empty)
-- outer and accessory are optional
-- One id per category; do not repeat the same id
-- Use only ids from the list
-- Pick colors that complement each other
-- The note must be in English and name the chosen pieces
-- Reply ONLY with the JSON object, nothing else`,
-  'ai.retry': 'Reply only with the JSON object for the requested schema. No markdown, no extra text.',
+- top, bottom and shoes are required (one id from that category)
+- outer and accessory: an id or "none"
+- Do not invent ids. Do not use UUIDs.
+- Complementary colors.
+- Note in English.`,
+  'ai.retry': 'JSON only. Short ids from the list (t1, b1, s1). outer/accessory may be "none". No markdown.',
   'ai.defaultNote': 'Outfit built from your wardrobe.',
 };
 
