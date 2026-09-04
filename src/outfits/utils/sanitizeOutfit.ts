@@ -11,6 +11,31 @@ export function sortItemsByCategory(items: ClothingItem[]): ClothingItem[] {
   );
 }
 
+/** Wear-order slots for the editorial lookboard (outer over top, then bottom, then shoes + accessory). */
+export type LookboardSlots = Partial<Record<Category, ClothingItem>>;
+
+export function groupLookboardSlots(items: ClothingItem[]): LookboardSlots {
+  const slots: LookboardSlots = {};
+  for (const item of items) {
+    if (!slots[item.category]) slots[item.category] = item;
+  }
+  return slots;
+}
+
+export type LookboardRow = ClothingItem[];
+
+export function lookboardRows(items: ClothingItem[]): LookboardRow[] {
+  const { outer, top, bottom, shoes, accessory } = groupLookboardSlots(items);
+  const rows: LookboardRow[] = [];
+  if (outer) rows.push([outer]);
+  if (top) rows.push([top]);
+  if (bottom) rows.push([bottom]);
+  if (shoes && accessory) rows.push([shoes, accessory]);
+  else if (shoes) rows.push([shoes]);
+  else if (accessory) rows.push([accessory]);
+  return rows;
+}
+
 export function wardrobeHasCorePieces(items: ClothingItem[]): boolean {
   return REQUIRED_SLOTS.every((cat) => items.some((i) => i.category === cat));
 }
@@ -63,6 +88,38 @@ export function sanitizeOutfitSelection(
     ids: resolved.map((i) => i.id),
     items: resolved,
     valid,
+  };
+}
+
+/** Keep AI picks and fill any missing required slot from the wardrobe. */
+export function completeOutfitSelection(
+  selection: Pick<OutfitSelection, Category>,
+  items: ClothingItem[],
+): SanitizedOutfit {
+  const first = sanitizeOutfitSelection(selection, items);
+  if (first.valid) return first;
+  if (first.items.length === 0) return first;
+
+  const used = new Set(first.ids);
+  const filled = [...first.items];
+
+  for (const cat of REQUIRED_SLOTS) {
+    if (filled.some((item) => item.category === cat)) continue;
+    const pool = items.filter((item) => item.category === cat && !used.has(item.id));
+    if (pool.length === 0) continue;
+    const item = pool[Math.floor(Math.random() * pool.length)];
+    used.add(item.id);
+    filled.push(item);
+  }
+
+  const ordered = OUTFIT_SLOT_ORDER
+    .map((cat) => filled.find((item) => item.category === cat))
+    .filter((item): item is ClothingItem => Boolean(item));
+
+  return {
+    ids: ordered.map((item) => item.id),
+    items: ordered,
+    valid: REQUIRED_SLOTS.every((cat) => ordered.some((item) => item.category === cat)),
   };
 }
 

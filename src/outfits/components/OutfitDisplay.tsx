@@ -1,11 +1,11 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ClothingItem } from '../../wardrobe/types';
 import { BlobImage } from '../../shared/components/BlobImage';
 import { generateOutfitCanvas, shareOrDownloadOutfit } from '../../shared/utils/outfitCanvas';
 import { Button } from '../../shared/ui/Button';
 import { Mark } from '../../shared/ui/Mark';
 import { Tag } from '../../shared/ui/Tag';
-import { sortItemsByCategory } from '../utils/sanitizeOutfit';
+import { lookboardRows } from '../utils/sanitizeOutfit';
 import type { OutfitSource } from '../hooks/useOutfitGenerator';
 import { dateLocale, t } from '../../i18n/i18n';
 import { useI18n } from '../../i18n/I18nProvider';
@@ -19,6 +19,31 @@ interface OutfitDisplayProps {
   onSave?: () => void;
 }
 
+function photoAspect(item: ClothingItem, paired: boolean): string {
+  if (paired) return 'aspect-square';
+  if (item.category === 'outer') return 'aspect-[2/1]';
+  if (item.category === 'shoes' || item.category === 'accessory') return 'aspect-[4/3]';
+  return 'aspect-[4/5]';
+}
+
+function LookboardPiece({ item, paired }: { item: ClothingItem; paired: boolean }) {
+  return (
+    <article className="overflow-hidden rounded-card bg-canvas">
+      <BlobImage
+        blob={item.imageBlob}
+        alt={item.name}
+        className={`${photoAspect(item, paired)} w-full object-cover`}
+      />
+      <div className="flex flex-col gap-2 p-3">
+        <p className="truncate font-display text-subheading leading-subheading tracking-[0.02em] text-ink">
+          {item.name}
+        </p>
+        <Tag>{categoryLabel(item.category)}</Tag>
+      </div>
+    </article>
+  );
+}
+
 export function OutfitDisplay({
   selectedIds,
   allItems,
@@ -27,42 +52,57 @@ export function OutfitDisplay({
   onSave,
 }: OutfitDisplayProps) {
   const { locale } = useI18n();
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [generating, setGenerating] = useState(false);
-  const [imageBlob, setImageBlob] = useState<Blob | null>(null);
+  const [preview, setPreview] = useState<{ key: string; url: string; blob: Blob } | null>(null);
+  const [generatingFor, setGeneratingFor] = useState<string | null>(null);
   const [sharing, setSharing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<{ key: string; message: string } | null>(null);
+  const genToken = useRef(0);
 
   const selectedItems = useMemo(() => {
     const found = selectedIds
       .map((id) => allItems.find((i) => i.id === id))
       .filter(Boolean) as ClothingItem[];
-    return sortItemsByCategory(found);
+    return found;
   }, [selectedIds, allItems]);
 
-  const dateLabel = useMemo(
-    () =>
-      new Date().toLocaleDateString(dateLocale(), {
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric',
-      }),
-    [locale],
-  );
+  const rows = useMemo(() => lookboardRows(selectedItems), [selectedItems]);
+  const dateLabel = new Date().toLocaleDateString(dateLocale(), {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+  const selectionKey = `${selectedIds.join('|')}|${note ?? ''}`;
+
+  const previewUrl = preview?.key === selectionKey ? preview.url : null;
+  const imageBlob = preview?.key === selectionKey ? preview.blob : null;
+  const generating = generatingFor === selectionKey;
+  const errorMessage = error?.key === selectionKey ? error.message : null;
+
+  useEffect(() => {
+    return () => {
+      if (preview) URL.revokeObjectURL(preview.url);
+    };
+  }, [preview]);
 
   async function handleGenerateImage() {
-    setGenerating(true);
+    const token = ++genToken.current;
+    const key = selectionKey;
+    setGeneratingFor(key);
     setError(null);
     try {
       const blob = await generateOutfitCanvas(selectedItems, note);
-      if (previewUrl) URL.revokeObjectURL(previewUrl);
-      setImageBlob(blob);
-      setPreviewUrl(URL.createObjectURL(blob));
+      if (token !== genToken.current) return;
+      const url = URL.createObjectURL(blob);
+      setPreview((prev) => {
+        if (prev) URL.revokeObjectURL(prev.url);
+        return { key, url, blob };
+      });
     } catch (err) {
       console.error('Failed to generate outfit image', err);
-      setError(t('outfit.imageFailed'));
+      if (token !== genToken.current) return;
+      setError({ key, message: t('outfit.imageFailed') });
     } finally {
-      setGenerating(false);
+      if (token === genToken.current) setGeneratingFor(null);
     }
   }
 
@@ -73,8 +113,9 @@ export function OutfitDisplay({
     try {
       await shareOrDownloadOutfit(imageBlob);
     } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') return;
       console.error('Failed to share outfit', err);
-      setError(t('outfit.shareFailed'));
+      setError({ key: selectionKey, message: t('outfit.shareFailed') });
     } finally {
       setSharing(false);
     }
@@ -90,26 +131,26 @@ export function OutfitDisplay({
           <h2 className="font-display text-subheading leading-subheading tracking-[0.02em] text-ink">
             {t('outfit.mine')}
           </h2>
-          <p className="font-system text-caption leading-caption text-ink/70">{dateLabel}</p>
+          <p key={locale} className="font-system text-caption leading-caption text-ink/70">
+            {dateLabel}
+          </p>
         </div>
       </header>
 
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
-        {selectedItems.map((item) => (
-          <article key={item.id} className="overflow-hidden rounded-card bg-canvas">
-            <BlobImage
-              blob={item.imageBlob}
-              alt={item.name}
-              className="aspect-[3/4] w-full object-cover"
-            />
-            <div className="flex flex-col gap-2 p-3">
-              <p className="truncate font-display text-subheading leading-subheading tracking-[0.02em] text-ink">
-                {item.name}
-              </p>
-              <Tag>{categoryLabel(item.category)}</Tag>
+      <div className="flex flex-col gap-3">
+        {rows.map((row) => {
+          const paired = row.length === 2;
+          return (
+            <div
+              key={row.map((item) => item.id).join('-')}
+              className={paired ? 'grid grid-cols-2 gap-3' : undefined}
+            >
+              {row.map((item) => (
+                <LookboardPiece key={item.id} item={item} paired={paired} />
+              ))}
             </div>
-          </article>
-        ))}
+          );
+        })}
       </div>
 
       {note && (
@@ -119,9 +160,9 @@ export function OutfitDisplay({
         </div>
       )}
 
-      {error && (
+      {errorMessage && (
         <p className="font-dm-sans font-medium text-body-sm leading-body-sm text-ember" role="alert">
-          {error}
+          {errorMessage}
         </p>
       )}
 

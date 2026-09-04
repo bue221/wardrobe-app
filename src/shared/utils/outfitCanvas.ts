@@ -1,7 +1,17 @@
 import type { ClothingItem } from '../../wardrobe/types';
-import { sortItemsByCategory } from '../../outfits/utils/sanitizeOutfit';
+import { lookboardRows } from '../../outfits/utils/sanitizeOutfit';
 import { canvasPaint } from '../../theme/theme';
 import { dateLocale, t } from '../../i18n/i18n';
+
+const W = 1080;
+const H = 1620;
+const PAD = 48;
+const GAP = 16;
+const HEADER_H = 80;
+const FOOTER_H = 52;
+const LABEL_H = 44;
+const RADIUS = 40;
+const NOTE_LINE = 20;
 
 function loadImage(blob: Blob): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
@@ -27,16 +37,17 @@ function drawRoundedRect(
   h: number,
   r: number
 ) {
+  const rad = Math.min(r, w / 2, h / 2);
   ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.lineTo(x + w - r, y);
-  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-  ctx.lineTo(x + w, y + h - r);
-  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-  ctx.lineTo(x + r, y + h);
-  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-  ctx.lineTo(x, y + r);
-  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.moveTo(x + rad, y);
+  ctx.lineTo(x + w - rad, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + rad);
+  ctx.lineTo(x + w, y + h - rad);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - rad, y + h);
+  ctx.lineTo(x + rad, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - rad);
+  ctx.lineTo(x, y + rad);
+  ctx.quadraticCurveTo(x, y, x + rad, y);
   ctx.closePath();
 }
 
@@ -48,14 +59,15 @@ function drawRoundedRectTop(
   h: number,
   r: number
 ) {
+  const rad = Math.min(r, w / 2, h / 2);
   ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.lineTo(x + w - r, y);
-  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.moveTo(x + rad, y);
+  ctx.lineTo(x + w - rad, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + rad);
   ctx.lineTo(x + w, y + h);
   ctx.lineTo(x, y + h);
-  ctx.lineTo(x, y + r);
-  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.lineTo(x, y + rad);
+  ctx.quadraticCurveTo(x, y, x + rad, y);
   ctx.closePath();
 }
 
@@ -80,35 +92,43 @@ function wrapText(
   return lines.slice(0, 3);
 }
 
+function ellipsize(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string {
+  if (ctx.measureText(text).width <= maxWidth) return text;
+  let clipped = text;
+  while (clipped.length > 0 && ctx.measureText(`${clipped}…`).width > maxWidth) {
+    clipped = clipped.slice(0, -1);
+  }
+  return clipped.length > 0 ? `${clipped}…` : '…';
+}
+
+function drawCoverImage(
+  ctx: CanvasRenderingContext2D,
+  img: HTMLImageElement,
+  x: number,
+  y: number,
+  w: number,
+  h: number
+) {
+  const scale = Math.max(w / img.width, h / img.height);
+  const dw = img.width * scale;
+  const dh = img.height * scale;
+  ctx.drawImage(img, x + (w - dw) / 2, y + (h - dh) / 2, dw, dh);
+}
+
+function rowWeight(row: ClothingItem[]): number {
+  if (row.length === 2) return 0.9;
+  const cat = row[0]?.category;
+  if (cat === 'top') return 1.2;
+  if (cat === 'bottom') return 1.05;
+  return 0.85;
+}
+
 export async function generateOutfitCanvas(
   items: ClothingItem[],
   note?: string
 ): Promise<Blob> {
-  const ordered = sortItemsByCategory(items);
-  const COLS = Math.min(ordered.length, 3);
-  const ROWS = Math.ceil(ordered.length / COLS);
-
-  const CARD_W = 260;
-  const CARD_H = 320;
-  const LABEL_H = 44;
-  const GAP = 16;
-  const PAD = 40;
-  const HEADER_H = 72;
-  const FOOTER_H = 48;
-  const NOTE_LINE = 20;
-  const RADIUS = 40;
-
-  // Measure note height after we have a temp context — approximate first
-  const noteBlockH = note?.trim() ? NOTE_LINE * 3 + 16 : 0;
-
-  const W = PAD * 2 + COLS * CARD_W + (COLS - 1) * GAP;
-  const H =
-    PAD +
-    HEADER_H +
-    ROWS * (CARD_H + LABEL_H) +
-    (ROWS - 1) * GAP +
-    noteBlockH +
-    FOOTER_H;
+  const rows = lookboardRows(items);
+  const uniqueItems = rows.flat();
 
   const canvas = document.createElement('canvas');
   canvas.width = W;
@@ -131,6 +151,7 @@ export async function generateOutfitCanvas(
   ctx.fillStyle = paint.ink;
   ctx.font = '400 32px "Bebas Neue", sans-serif';
   ctx.textAlign = 'left';
+  ctx.textBaseline = 'alphabetic';
   ctx.fillText(t('outfit.mine'), PAD + 48, PAD + 34);
 
   const now = new Date().toLocaleDateString(dateLocale(), {
@@ -141,7 +162,6 @@ export async function generateOutfitCanvas(
   ctx.font = '500 12px "DM Sans", ui-sans-serif, system-ui, sans-serif';
   ctx.fillText(now, PAD + 48, PAD + 52);
 
-  // Dotted divider (Caldera: dotted, not dashed)
   ctx.strokeStyle = paint.ink;
   ctx.setLineDash([1.5, 4]);
   ctx.lineWidth = 1.5;
@@ -153,57 +173,73 @@ export async function generateOutfitCanvas(
   ctx.setLineDash([]);
   ctx.lineCap = 'butt';
 
-  const images = await Promise.all(ordered.map((item) => loadImage(item.imageBlob)));
+  const hasNote = Boolean(note?.trim());
+  const noteBlockH = hasNote ? NOTE_LINE * 3 + 16 : 0;
+  const contentTop = PAD + HEADER_H;
+  const contentBottom = H - PAD - FOOTER_H - noteBlockH;
+  const rowGapTotal = rows.length > 0 ? GAP * (rows.length - 1) : 0;
+  const available = Math.max(contentBottom - contentTop - rowGapTotal, LABEL_H * Math.max(rows.length, 1));
+  const weightSum = rows.reduce((sum, row) => sum + rowWeight(row), 0) || 1;
 
-  for (let i = 0; i < ordered.length; i++) {
-    const col = i % COLS;
-    const row = Math.floor(i / COLS);
-    const x = PAD + col * (CARD_W + GAP);
-    const y = PAD + HEADER_H + row * (CARD_H + LABEL_H + GAP);
+  const images = await Promise.all(uniqueItems.map((item) => loadImage(item.imageBlob)));
+  const imageById = new Map(uniqueItems.map((item, i) => [item.id, images[i]]));
 
-    ctx.fillStyle = paint.surface;
-    drawRoundedRect(ctx, x, y, CARD_W, CARD_H + LABEL_H, RADIUS);
-    ctx.fill();
+  let cursorY = contentTop;
+  const contentW = W - PAD * 2;
 
-    ctx.save();
-    drawRoundedRectTop(ctx, x, y, CARD_W, CARD_H, RADIUS);
-    ctx.clip();
+  for (let r = 0; r < rows.length; r++) {
+    const row = rows[r];
+    const rowH = available * (rowWeight(row) / weightSum);
+    const photoH = Math.max(rowH - LABEL_H, 80);
+    const cellW = row.length === 2 ? (contentW - GAP) / 2 : contentW;
 
-    const img = images[i];
-    const scale = Math.max(CARD_W / img.width, CARD_H / img.height);
-    const dw = img.width * scale;
-    const dh = img.height * scale;
-    const dx = x + (CARD_W - dw) / 2;
-    const dy = y + (CARD_H - dh) / 2;
-    ctx.drawImage(img, dx, dy, dw, dh);
-    ctx.restore();
+    for (let i = 0; i < row.length; i++) {
+      const item = row[i];
+      const img = imageById.get(item.id);
+      if (!img) continue;
+      const x = PAD + i * (cellW + GAP);
+      const y = cursorY;
 
-    const name =
-      ordered[i].name.length > 20 ? ordered[i].name.slice(0, 18) + '…' : ordered[i].name;
-    ctx.fillStyle = paint.ink;
-    ctx.font = '500 12px "DM Sans", ui-sans-serif, system-ui, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText(name, x + CARD_W / 2, y + CARD_H + 27);
+      ctx.fillStyle = paint.surface;
+      drawRoundedRect(ctx, x, y, cellW, rowH, RADIUS);
+      ctx.fill();
+
+      ctx.save();
+      drawRoundedRectTop(ctx, x, y, cellW, photoH, RADIUS);
+      ctx.clip();
+      drawCoverImage(ctx, img, x, y, cellW, photoH);
+      ctx.restore();
+
+      ctx.fillStyle = paint.ink;
+      ctx.font = '500 12px "DM Sans", ui-sans-serif, system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      const label = ellipsize(ctx, item.name, cellW - 24);
+      ctx.fillText(label, x + cellW / 2, y + photoH + LABEL_H / 2);
+    }
+
+    cursorY += rowH;
+    if (r < rows.length - 1) cursorY += GAP;
   }
 
-  let cursorY = PAD + HEADER_H + ROWS * (CARD_H + LABEL_H) + (ROWS - 1) * GAP + 20;
-
-  if (note?.trim()) {
+  if (hasNote) {
     ctx.fillStyle = paint.ink;
     ctx.font = '500 14px "DM Sans", ui-sans-serif, system-ui, sans-serif';
     ctx.textAlign = 'left';
-    const lines = wrapText(ctx, note.trim(), W - PAD * 2);
+    ctx.textBaseline = 'alphabetic';
+    const lines = wrapText(ctx, note!.trim(), contentW);
+    let noteY = H - PAD - FOOTER_H - noteBlockH + 20;
     for (const line of lines) {
-      ctx.fillText(line, PAD, cursorY);
-      cursorY += NOTE_LINE;
+      ctx.fillText(line, PAD, noteY);
+      noteY += NOTE_LINE;
     }
-    cursorY += 8;
   }
 
   ctx.fillStyle = paint.ink;
   ctx.font = '500 12px "DM Sans", ui-sans-serif, system-ui, sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText(t('outfit.canvasFooter'), W / 2, H - FOOTER_H + 20);
+  ctx.textBaseline = 'alphabetic';
+  ctx.fillText(t('outfit.canvasFooter'), W / 2, H - 32);
 
   return new Promise<Blob>((resolve, reject) => {
     canvas.toBlob(
