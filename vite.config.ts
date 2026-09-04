@@ -9,7 +9,7 @@ export default defineConfig({
     react(),
   ],
   optimizeDeps: {
-    exclude: ['@mlc-ai/web-llm'],
+    exclude: ['@mlc-ai/web-llm', '@huggingface/transformers'],
   },
   worker: {
     format: 'es',

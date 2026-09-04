@@ -13,6 +13,7 @@ export const PRESET_COLOR_KEYS = [
   'rosa',
   'marron',
   'beige',
+  'naranja',
 ] as const;
 
 export type PresetColorKey = (typeof PRESET_COLOR_KEYS)[number];
