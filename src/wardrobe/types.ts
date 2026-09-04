@@ -1,12 +1,21 @@
 export type Category = 'top' | 'bottom' | 'shoes' | 'outer' | 'accessory';
 
-export const CATEGORIES: { value: Category; label: string; emoji: string }[] = [
-  { value: 'top', label: 'Tops', emoji: '👕' },
-  { value: 'bottom', label: 'Bottoms', emoji: '👖' },
-  { value: 'shoes', label: 'Zapatos', emoji: '👟' },
-  { value: 'outer', label: 'Abrigos', emoji: '🧥' },
-  { value: 'accessory', label: 'Accesorios', emoji: '👜' },
-];
+export const CATEGORIES: Category[] = ['top', 'bottom', 'shoes', 'outer', 'accessory'];
+
+export const PRESET_COLOR_KEYS = [
+  'negro',
+  'blanco',
+  'gris',
+  'azul',
+  'rojo',
+  'verde',
+  'amarillo',
+  'rosa',
+  'marron',
+  'beige',
+] as const;
+
+export type PresetColorKey = (typeof PRESET_COLOR_KEYS)[number];
 
 export interface ClothingItem {
   id: string;

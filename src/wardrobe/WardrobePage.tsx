@@ -7,14 +7,19 @@ import { UploadForm } from './components/UploadForm';
 import { Toast } from '../shared/components/Toast';
 import { seedWardrobe } from './utils/seedWardrobe';
 import type { Category } from './types';
+import { Button } from '../shared/ui/Button';
+import { EmptyState } from '../shared/ui/EmptyState';
+import { Tag } from '../shared/ui/Tag';
+import { useI18n } from '../i18n/I18nProvider';
 
 export function WardrobePage() {
+  const { t } = useI18n();
   const { items, loading, addItem, removeItem } = useWardrobe();
   const { usageMap, totalOutfits, topItemId } = useStats();
   const [filter, setFilter] = useState<Category | 'all'>('all');
   const [search, setSearch] = useState('');
   const [showUpload, setShowUpload] = useState(false);
-  const [toast, setToast] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [seeding, setSeeding] = useState(false);
 
   const filtered = items.filter((i) => {
@@ -26,15 +31,32 @@ export function WardrobePage() {
   const topItem = items.find((i) => i.id === topItemId);
 
   async function handleAdd(file: File, name: string, category: Category, colors: string[]) {
-    await addItem(file, name, category, colors);
-    setToast('Prenda guardada ✓');
+    try {
+      await addItem(file, name, category, colors);
+      setToast({ message: t('wardrobe.saved'), type: 'success' });
+    } catch (error) {
+      console.error('Failed to save clothing item', error);
+      setToast({ message: t('wardrobe.saveFailed'), type: 'error' });
+    }
   }
 
   async function handleSeed() {
     setSeeding(true);
     try {
-      await seedWardrobe(addItem);
-      setToast('8 prendas de ejemplo cargadas ✓');
+      const { added, skipped } = await seedWardrobe(
+        addItem,
+        items.map((item) => item.name),
+      );
+      if (added === 0 && skipped > 0) {
+        setToast({ message: t('wardrobe.seedAlready'), type: 'success' });
+      } else if (skipped > 0) {
+        setToast({ message: t('wardrobe.seedMixed', { added, skipped }), type: 'success' });
+      } else {
+        setToast({ message: t('wardrobe.seedDone', { added }), type: 'success' });
+      }
+    } catch (error) {
+      console.error('Failed to seed wardrobe', error);
+      setToast({ message: t('wardrobe.seedFailed'), type: 'error' });
     } finally {
       setSeeding(false);
     }
@@ -42,117 +64,99 @@ export function WardrobePage() {
 
   const isEmpty = !loading && items.length === 0;
   const noResults = !loading && items.length > 0 && filtered.length === 0;
+  const countLabel =
+    items.length === 1
+      ? t('wardrobe.countOne', { n: items.length })
+      : t('wardrobe.countMany', { n: items.length });
 
   return (
-    <div className="space-y-4">
-      {/* Header */}
-      <div className="flex justify-between items-start">
+    <div className="flex flex-col gap-4">
+      <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-white text-xl font-bold">Mi Armario</h1>
+          <h1 className="font-display text-heading leading-heading tracking-[0.02em] text-ink">
+            {t('wardrobe.title')}
+          </h1>
           {!loading && items.length > 0 && (
-            <p className="text-zinc-500 text-xs mt-0.5">
-              {items.length} {items.length === 1 ? 'prenda' : 'prendas'}
-              {totalOutfits > 0 && ` · ${totalOutfits} outfits`}
+            <p className="mt-1 font-system text-caption leading-caption text-ink">
+              {countLabel}
+              {totalOutfits > 0 && ` · ${t('wardrobe.outfits', { n: totalOutfits })}`}
             </p>
           )}
         </div>
-        <button
-          onClick={() => setShowUpload(true)}
-          className="bg-gradient-to-r from-violet-600 to-fuchsia-500 hover:from-violet-500 hover:to-fuchsia-400 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-all shadow-lg shadow-violet-900/30"
-        >
-          + Agregar
-        </button>
+        {items.length > 0 && <Button onClick={() => setShowUpload(true)}>{t('wardrobe.add')}</Button>}
       </div>
 
-      {/* Stats strip (only when items exist) */}
-      {!loading && items.length > 0 && topItem && (
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-          <span className="bg-zinc-800 text-zinc-400 text-[11px] px-2.5 py-1 rounded-full">
-            ⭐ {topItem.name}
-          </span>
+      {!loading && items.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          {topItem && <Tag>{t('wardrobe.top', { name: topItem.name })}</Tag>}
           <button
+            type="button"
             onClick={handleSeed}
             disabled={seeding}
-            className="ml-auto text-zinc-600 hover:text-zinc-400 text-[11px] transition-colors disabled:opacity-50"
+            className="ml-auto min-h-11 font-system text-caption leading-caption text-ink disabled:opacity-40"
           >
-            {seeding ? 'Cargando...' : '+ ejemplos'}
+            {seeding ? t('wardrobe.loadingExamples') : t('wardrobe.examples')}
           </button>
         </div>
       )}
 
-      {/* Search */}
-      <div className="relative">
-        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 text-sm">🔍</span>
-        <input
-          type="search"
-          placeholder="Buscar prenda..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full bg-zinc-800 text-white rounded-xl pl-9 pr-4 py-2.5 text-sm placeholder:text-zinc-500 outline-none focus:ring-2 focus:ring-violet-500"
-        />
-      </div>
+      {items.length > 0 && (
+        <>
+          <input
+            type="search"
+            placeholder={t('wardrobe.search')}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            aria-label={t('wardrobe.searchAria')}
+            className="w-full rounded-input border-[1.5px] border-solid border-ink bg-surface px-8 py-3 font-dm-sans font-medium text-base text-ink outline-none placeholder:text-ink/40"
+          />
 
-      <FilterBar active={filter} onChange={setFilter} />
+          <FilterBar active={filter} onChange={setFilter} />
+        </>
+      )}
 
-      {/* Loading skeleton */}
       {loading && (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="bg-zinc-800 rounded-2xl aspect-[3/4] animate-pulse" />
+            <div key={i} className="aspect-[3/4] animate-pulse rounded-card bg-surface" />
           ))}
         </div>
       )}
 
-      {/* Empty wardrobe */}
       {isEmpty && (
-        <div className="flex flex-col items-center justify-center py-14 gap-5">
-          <span className="text-7xl">👗</span>
-          <div className="text-center">
-            <p className="text-white font-semibold text-lg">Tu armario está vacío</p>
-            <p className="text-zinc-400 text-sm mt-1">Subí tu primera prenda o cargá ejemplos para probar</p>
+        <EmptyState title={t('wardrobe.emptyTitle')} body={t('wardrobe.emptyBody')}>
+          <div className="flex w-full max-w-xs flex-col gap-3">
+            <Button onClick={() => setShowUpload(true)}>{t('wardrobe.addItem')}</Button>
+            <Button variant="secondary" onClick={handleSeed} disabled={seeding}>
+              {seeding ? t('wardrobe.loadingExamplesLong') : t('wardrobe.loadExamples')}
+            </Button>
           </div>
-          <div className="flex flex-col items-center gap-3 w-full max-w-xs">
-            <button
-              onClick={() => setShowUpload(true)}
-              className="w-full py-3 bg-gradient-to-r from-violet-600 to-fuchsia-500 hover:from-violet-500 hover:to-fuchsia-400 text-white rounded-xl font-semibold text-sm transition-all shadow-lg shadow-violet-900/30"
-            >
-              + Agregar prenda
-            </button>
-            <button
-              onClick={handleSeed}
-              disabled={seeding}
-              className="w-full py-3 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-xl text-sm font-medium transition-colors disabled:opacity-50"
-            >
-              {seeding ? '⏳ Cargando ejemplos...' : '🧪 Cargar prendas de ejemplo'}
-            </button>
-          </div>
-        </div>
+        </EmptyState>
       )}
 
-      {/* No filter results */}
       {noResults && (
-        <div className="flex flex-col items-center justify-center py-14 gap-2 text-zinc-500">
-          <span className="text-4xl">🔍</span>
-          <p className="text-sm">Sin prendas en esta categoría</p>
-          <button
-            onClick={() => { setFilter('all'); setSearch(''); }}
-            className="text-violet-400 text-xs hover:underline mt-1"
+        <EmptyState title={t('wardrobe.noResultsTitle')} body={t('wardrobe.noResultsBody')}>
+          <Button
+            variant="secondary"
+            onClick={() => {
+              setFilter('all');
+              setSearch('');
+            }}
           >
-            Limpiar filtros
-          </button>
-        </div>
+            {t('wardrobe.clearFilters')}
+          </Button>
+        </EmptyState>
       )}
 
-      {/* Grid */}
       {!loading && filtered.length > 0 && (
         <ClothingGrid items={filtered} usageMap={usageMap} onDelete={removeItem} />
       )}
 
-      {showUpload && (
-        <UploadForm onAdd={handleAdd} onClose={() => setShowUpload(false)} />
-      )}
+      {showUpload && <UploadForm onAdd={handleAdd} onClose={() => setShowUpload(false)} />}
 
-      {toast && <Toast message={toast} type="success" onClose={() => setToast(null)} />}
+      {toast && (
+        <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />
+      )}
     </div>
   );
 }

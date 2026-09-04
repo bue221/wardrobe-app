@@ -1,81 +1,67 @@
 import type { Category } from '../types';
+import { seedLabel } from '../../i18n/labels';
 
-interface SeedDef {
-  name: string;
+export interface SeedGarment {
+  id: string;
   category: Category;
   colors: string[];
-  bgColor: string;
-  fgColor: string;
-  emoji: string;
+  src: string;
 }
 
-const SEED_DATA: SeedDef[] = [
-  { name: 'Remera blanca básica', category: 'top',       colors: ['Blanco'], bgColor: '#E8E4D8', fgColor: '#444', emoji: '👕' },
-  { name: 'Remera negra lisa',    category: 'top',       colors: ['Negro'],  bgColor: '#1E1E1E', fgColor: '#ccc', emoji: '👕' },
-  { name: 'Jeans azul clásico',   category: 'bottom',    colors: ['Azul'],   bgColor: '#3A5280', fgColor: '#ddd', emoji: '👖' },
-  { name: 'Pantalón gris',        category: 'bottom',    colors: ['Gris'],   bgColor: '#5A5A5A', fgColor: '#eee', emoji: '👖' },
-  { name: 'Zapatillas blancas',   category: 'shoes',     colors: ['Blanco'], bgColor: '#EDEDEA', fgColor: '#555', emoji: '👟' },
-  { name: 'Campera beige',        category: 'jacket',    colors: ['Beige'],  bgColor: '#BEA07A', fgColor: '#333', emoji: '🧥' },
-  { name: 'Vestido verde',        category: 'dress',     colors: ['Verde'],  bgColor: '#2B5130', fgColor: '#ddd', emoji: '👗' },
-  { name: 'Bufanda roja',         category: 'accessory', colors: ['Rojo'],   bgColor: '#7A1F1F', fgColor: '#eee', emoji: '🧣' },
+export const SEED_GARMENTS: SeedGarment[] = [
+  { id: 'remera-blanca', category: 'top', colors: ['blanco'], src: '/seed/remera-blanca.jpg' },
+  { id: 'remera-ember', category: 'top', colors: ['naranja'], src: '/seed/remera-ember.jpg' },
+  { id: 'jeans-azul', category: 'bottom', colors: ['azul'], src: '/seed/jeans-azul.jpg' },
+  { id: 'pantalon-negro', category: 'bottom', colors: ['negro'], src: '/seed/pantalon-negro.jpg' },
+  { id: 'zapatillas-blancas', category: 'shoes', colors: ['blanco'], src: '/seed/zapatillas-blancas.jpg' },
+  { id: 'campera-beige', category: 'outer', colors: ['beige'], src: '/seed/campera-beige.jpg' },
+  { id: 'tapado-negro', category: 'outer', colors: ['negro'], src: '/seed/tapado-negro.jpg' },
+  { id: 'panuelo-sulfur', category: 'accessory', colors: ['amarillo'], src: '/seed/panuelo-sulfur.jpg' },
 ];
 
-function drawCanvas(def: SeedDef): Promise<Blob> {
-  return new Promise((resolve, reject) => {
-    const W = 300, H = 400;
-    const canvas = document.createElement('canvas');
-    canvas.width = W;
-    canvas.height = H;
-    const ctx = canvas.getContext('2d')!;
+function seedName(id: string): string {
+  return seedLabel(id);
+}
 
-    ctx.fillStyle = def.bgColor;
-    ctx.fillRect(0, 0, W, H);
-
-    // Subtle diagonal texture
-    ctx.save();
-    ctx.strokeStyle = def.fgColor + '14';
-    ctx.lineWidth = 1;
-    for (let x = -H; x < W + H; x += 18) {
-      ctx.beginPath();
-      ctx.moveTo(x, 0);
-      ctx.lineTo(x + H, H);
-      ctx.stroke();
-    }
-    ctx.restore();
-
-    // Emoji
-    ctx.font = '96px serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(def.emoji, W / 2, H * 0.42);
-
-    // Bottom gradient for name readability
-    const grad = ctx.createLinearGradient(0, H * 0.65, 0, H);
-    grad.addColorStop(0, 'rgba(0,0,0,0)');
-    grad.addColorStop(1, 'rgba(0,0,0,0.6)');
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, H * 0.65, W, H * 0.35);
-
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 18px -apple-system, BlinkMacSystemFont, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'bottom';
-    ctx.fillText(def.name, W / 2, H - 14);
-
-    canvas.toBlob(
-      (blob) => (blob ? resolve(blob) : reject(new Error('Canvas toBlob failed'))),
-      'image/jpeg',
-      0.88,
-    );
-  });
+async function fetchSeedFile(src: string, name: string): Promise<File> {
+  const res = await fetch(src);
+  if (!res.ok) {
+    throw new Error(`No se pudo cargar la foto de ${name}`);
+  }
+  const blob = await res.blob();
+  return new File([blob], `${name}.jpg`, { type: blob.type || 'image/jpeg' });
 }
 
 type AddItemFn = (file: File, name: string, category: Category, colors: string[]) => Promise<unknown>;
 
-export async function seedWardrobe(addItem: AddItemFn): Promise<void> {
-  for (const def of SEED_DATA) {
-    const blob = await drawCanvas(def);
-    const file = new File([blob], `${def.name}.jpg`, { type: 'image/jpeg' });
-    await addItem(file, def.name, def.category, def.colors);
+export async function seedWardrobe(
+  addItem: AddItemFn,
+  existingNames: string[] = [],
+): Promise<{ added: number; skipped: number }> {
+  const have = new Set(existingNames.map((n) => n.toLowerCase()));
+  let added = 0;
+  let skipped = 0;
+  const failures: string[] = [];
+
+  for (const def of SEED_GARMENTS) {
+    const name = seedName(def.id);
+    if (have.has(name.toLowerCase())) {
+      skipped += 1;
+      continue;
+    }
+    try {
+      const file = await fetchSeedFile(def.src, name);
+      await addItem(file, name, def.category, def.colors);
+      added += 1;
+    } catch (error) {
+      console.error('Failed to seed garment', def.id, error);
+      failures.push(name);
+    }
   }
+
+  if (added === 0 && failures.length > 0) {
+    throw new Error('No se pudieron cargar las fotos de ejemplo');
+  }
+
+  return { added, skipped };
 }
