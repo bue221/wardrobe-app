@@ -1,23 +1,53 @@
 @import "tailwindcss";
 
 @theme {
-  /* Forest green palette — overrides zinc and violet/fuchsia accent tokens */
-  --color-zinc-950: #1A3220;
-  --color-zinc-900: #1F3D26;
-  --color-zinc-800: #2B5130;
-  --color-zinc-700: #3A6640;
-  --color-zinc-600: #4A7A52;
-  --color-zinc-500: #6B9970;
-  --color-zinc-400: #9EB585;
-  --color-zinc-300: #C8D9B8;
+  --color-ember: #fc5000;
+  --color-plasma-violet: #524ae9;
+  --color-sulfur: #f5f28e;
+  --color-limestone: #f7f6f2;
+  --color-pumice: #e2e2df;
+  --color-obsidian: #070607;
+  --color-chalk: #ffffff;
+  --color-canvas: #e2e2df;
+  --color-surface: #f7f6f2;
+  --color-ink: #070607;
+  --color-inverse: #070607;
+  --color-on-inverse: #ffffff;
 
-  --color-violet-600: #4A7A52;
-  --color-violet-500: #4A7A52;
-  --color-violet-400: #9EB585;
-  --color-violet-900: #1F3D26;
+  --font-display: "Bebas Neue", ui-sans-serif, system-ui, sans-serif;
+  --font-dm-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-system: ui-sans-serif, system-ui, sans-serif;
 
-  --color-fuchsia-500: #5C8F63;
-  --color-fuchsia-400: #7DB584;
+  --text-caption: 12px;
+  --leading-caption: 1.2;
+  --text-body-sm: 14px;
+  --leading-body-sm: 1.2;
+  --text-body: 16px;
+  --leading-body: 1.55;
+  --text-subheading: 26px;
+  --leading-subheading: 1.2;
+  --text-heading-sm: 30px;
+  --leading-heading-sm: 1.5;
+  --text-heading: clamp(1.625rem, 2.5vw, 2rem);
+  --leading-heading: 1;
+  --text-heading-lg: clamp(2rem, 4vw, 3rem);
+  --leading-heading-lg: 1;
+  --text-heading-2xl: clamp(2.5rem, 6vw, 5rem);
+  --leading-heading-2xl: 1.1;
+  --text-heading-3xl: clamp(3rem, 8vw, 6rem);
+  --leading-heading-3xl: 0.95;
+  --text-display: clamp(4rem, 12vw + 1rem, 11.8125rem);
+  --leading-display: 0.94;
+
+  --radius-small: 16px;
+  --radius-medium: 20px;
+  --radius-card: 40px;
+  --radius-input: 100px;
+  --radius-pill: 800px;
+
+  --spacing-9: 9px;
+  --spacing-18: 18px;
+  --spacing-92: 92px;
 }
 
 @layer base {
@@ -25,7 +55,28 @@
     box-sizing: border-box;
   }
 
+  html,
   body {
+    background-color: var(--color-canvas);
+    color: var(--color-ink);
+  }
+
+  html[data-theme='dark'] {
+    --color-canvas: #070607;
+    --color-surface: color-mix(in srgb, var(--color-chalk) 11%, var(--color-obsidian));
+    --color-ink: #ffffff;
+    --color-inverse: #f7f6f2;
+    --color-on-inverse: #070607;
+  }
+
+  body {
+    font-family: var(--font-dm-sans);
+    font-weight: 500;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  button,
+  a {
     -webkit-tap-highlight-color: transparent;
   }
 }
@@ -39,4 +90,88 @@
     display: none;
   }
 
+  .halftone-dots {
+    background-image: radial-gradient(circle, #fc5000 1.15px, transparent 1.25px);
+    background-size: 7px 7px;
+    mask-image: linear-gradient(to top right, #000 35%, transparent 100%);
+  }
+
+  .anim-wait {
+    opacity: 0;
+    transform: translate3d(0, 22px, 0);
+  }
+
+  .anim-in {
+    animation: caldera-rise 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .marquee-track {
+    display: flex;
+    width: max-content;
+  }
+}
+
+@keyframes caldera-rise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 22px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes caldera-drift {
+  to {
+    background-position: 7px 7px;
+  }
+}
+
+@keyframes caldera-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes caldera-glow {
+  0%,
+  100% {
+    background-color: #fc5000;
+  }
+  50% {
+    background-color: #ff6a1a;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .halftone-dots {
+    animation: caldera-drift 1.2s linear infinite;
+  }
+
+  .marquee-track {
+    animation: caldera-marquee 28s linear infinite;
+  }
+
+  .anim-ember {
+    animation: caldera-glow 2.8s ease-in-out infinite;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .anim-wait,
+  .anim-in {
+    opacity: 1;
+    transform: none;
+    animation: none;
+  }
+
+  .halftone-dots,
+  .marquee-track,
+  .anim-ember {
+    animation: none;
+  }
 }
