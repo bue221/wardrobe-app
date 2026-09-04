@@ -1,28 +1,27 @@
 import { useState, useCallback } from 'react';
 import type { ClothingItem } from '../../wardrobe/types';
 import type { SavedOutfit } from '../types';
-import { getEngine } from '../../ai/WebLLMEngine';
-import { buildOutfitPrompt, parseOutfitResponse } from '../../ai/outfitPrompt';
+import { getEngine, resetEngine, toAiErrorKey } from '../../ai/WebLLMEngine';
+import { buildOutfitPrompt, buildRetryPrompt, parseOutfitResponse } from '../../ai/outfitPrompt';
 import { saveOutfit, getAllOutfits, deleteOutfit } from '../../shared/db/wardrobeDB';
+import { t } from '../../i18n/i18n';
+import {
+  groundOutfitNote,
+  wardrobeHasCorePieces,
+  randomOutfit,
+  sanitizeOutfitSelection,
+} from '../utils/sanitizeOutfit';
 
 type InitProgressReport = { progress?: number; text?: string };
+
+export type OutfitSource = 'ai' | 'random';
 
 export type GeneratorStatus =
   | { type: 'idle' }
   | { type: 'loading-model'; progress: number; text: string }
   | { type: 'generating' }
-  | { type: 'done'; ids: string[]; note: string }
+  | { type: 'done'; ids: string[]; note: string; source: OutfitSource }
   | { type: 'error'; message: string };
-
-function randomOutfit(items: ClothingItem[]): string[] {
-  const pick = (cat: ClothingItem['category']) => {
-    const pool = items.filter((i) => i.category === cat);
-    return pool.length ? pool[Math.floor(Math.random() * pool.length)] : null;
-  };
-  return [pick('top'), pick('bottom'), pick('shoes'), pick('outer'), pick('accessory')]
-    .filter(Boolean)
-    .map((i) => i!.id);
-}
 
 export function useOutfitGenerator() {
   const [status, setStatus] = useState<GeneratorStatus>({ type: 'idle' });
@@ -34,60 +33,105 @@ export function useOutfitGenerator() {
   }, []);
 
   const generateRandom = useCallback((items: ClothingItem[]) => {
-    const ids = randomOutfit(items);
-    if (ids.length < 2) {
-      setStatus({ type: 'error', message: 'Agregá al menos un top, un bottom y unos zapatos.' });
+    if (!wardrobeHasCorePieces(items)) {
+      setStatus({
+        type: 'error',
+        message: t('outfit.needCore'),
+      });
       return;
     }
-    setStatus({ type: 'done', ids, note: 'Outfit aleatorio generado.' });
+    const picked = randomOutfit(items);
+    setStatus({
+      type: 'done',
+      ids: picked.map((i) => i.id),
+      note: t('outfit.randomNote'),
+      source: 'random',
+    });
   }, []);
 
   const generateAI = useCallback(async (items: ClothingItem[]) => {
-    if (items.length < 3) {
-      setStatus({ type: 'error', message: 'Necesitás al menos 3 prendas para usar la IA.' });
+    if (!wardrobeHasCorePieces(items)) {
+      setStatus({
+        type: 'error',
+        message: t('outfit.needCoreAi'),
+      });
       return;
     }
 
     const onProgress = (report: InitProgressReport) => {
       const progress = Math.round((report.progress ?? 0) * 100);
-      setStatus({ type: 'loading-model', progress, text: report.text ?? 'Cargando modelo...' });
+      setStatus({ type: 'loading-model', progress, text: report.text ?? t('outfit.progressLoad') });
+    };
+
+    const applyRandomFallback = (note: string) => {
+      const picked = randomOutfit(items);
+      setStatus({
+        type: 'done',
+        ids: picked.map((i) => i.id),
+        note,
+        source: 'random',
+      });
     };
 
     try {
-      setStatus({ type: 'loading-model', progress: 0, text: 'Iniciando modelo...' });
+      setStatus({ type: 'loading-model', progress: 0, text: t('outfit.progressInit') });
       const engine = await getEngine(onProgress);
       setStatus({ type: 'generating' });
 
       const prompt = buildOutfitPrompt(items);
       const response = await engine.chat.completions.create({
         messages: [{ role: 'user', content: prompt }],
-        temperature: 0.7,
-        max_tokens: 256,
+        temperature: 0.3,
+        max_tokens: 320,
       });
 
-      const raw = response.choices[0]?.message?.content ?? '';
-      const selection = parseOutfitResponse(raw);
+      let raw = response.choices[0]?.message?.content ?? '';
+      let selection = parseOutfitResponse(raw);
 
       if (!selection) {
-        const fallbackIds = randomOutfit(items);
-        setStatus({ type: 'done', ids: fallbackIds, note: 'La IA no pudo responder correctamente. Acá va un outfit random.' });
+        const retry = await engine.chat.completions.create({
+          messages: [
+            { role: 'user', content: prompt },
+            { role: 'assistant', content: raw || '{}' },
+            { role: 'user', content: buildRetryPrompt() },
+          ],
+          temperature: 0.1,
+          max_tokens: 320,
+        });
+        raw = retry.choices[0]?.message?.content ?? '';
+        selection = parseOutfitResponse(raw);
+      }
+
+      if (!selection) {
+        applyRandomFallback(t('outfit.aiFallback'));
         return;
       }
 
-      const ids = [selection.top, selection.bottom, selection.shoes, selection.outer, selection.accessory]
-        .filter((id): id is string => !!id && items.some((i) => i.id === id));
+      const sanitized = sanitizeOutfitSelection(selection, items);
+      if (!sanitized.valid) {
+        applyRandomFallback(t('outfit.aiFallback'));
+        return;
+      }
 
-      setStatus({ type: 'done', ids, note: selection.note });
+      const note = groundOutfitNote(selection.note, sanitized.items);
+      setStatus({
+        type: 'done',
+        ids: sanitized.ids,
+        note,
+        source: 'ai',
+      });
     } catch (err) {
-      setStatus({ type: 'error', message: (err as Error).message ?? 'Error al cargar la IA.' });
+      resetEngine();
+      setStatus({ type: 'error', message: t(toAiErrorKey(err)) });
     }
   }, []);
 
-  const saveCurrentOutfit = useCallback(async (ids: string[], note?: string) => {
+  const saveCurrentOutfit = useCallback(async (ids: string[], note?: string, source?: OutfitSource) => {
     const outfit: SavedOutfit = {
       id: crypto.randomUUID(),
       clothingIds: ids,
-      aiNote: note,
+      // Only persist AI notes so history Tag IA stays accurate
+      aiNote: source === 'ai' ? note : undefined,
       createdAt: Date.now(),
     };
     await saveOutfit(outfit);

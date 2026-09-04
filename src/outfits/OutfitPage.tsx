@@ -4,88 +4,81 @@ import { useOutfitGenerator } from './hooks/useOutfitGenerator';
 import { useWebGPU } from '../shared/hooks/useWebGPU';
 import { OutfitDisplay } from './components/OutfitDisplay';
 import { Toast } from '../shared/components/Toast';
+import { Button } from '../shared/ui/Button';
+import { EmptyState } from '../shared/ui/EmptyState';
+import { useI18n } from '../i18n/I18nProvider';
 
 export function OutfitPage() {
+  const { t } = useI18n();
   const { items } = useWardrobe();
   const webGpuSupported = useWebGPU();
   const { status, generateRandom, generateAI, saveCurrentOutfit, reset } = useOutfitGenerator();
-  const [toast, setToast] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   const isLoading = status.type === 'loading-model' || status.type === 'generating';
   const isDone = status.type === 'done';
 
   async function handleSave() {
     if (status.type !== 'done') return;
-    await saveCurrentOutfit(status.ids, status.note);
-    setToast('Outfit guardado ✓');
-    reset();
+    try {
+      await saveCurrentOutfit(status.ids, status.note, status.source);
+      setToast({ message: t('outfit.saved'), type: 'success' });
+      reset();
+    } catch (error) {
+      console.error('Failed to save outfit', error);
+      setToast({ message: t('outfit.saveFailed'), type: 'error' });
+    }
   }
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-white text-xl font-bold">Generador de Outfits</h1>
+    <div className="flex flex-col gap-6">
+      <h1 className="font-display text-heading leading-heading tracking-[0.02em] text-ink">
+        {t('outfit.title')}
+      </h1>
 
       {items.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-20 gap-4 text-center">
-          <span className="text-6xl">✨</span>
-          <div>
-            <p className="text-white font-semibold">Todavía no tenés prendas</p>
-            <p className="text-zinc-500 text-sm mt-1">Primero agregá ropa en tu armario para poder generar outfits.</p>
-          </div>
-        </div>
+        <EmptyState title={t('outfit.emptyTitle')} body={t('outfit.emptyBody')} />
       )}
 
       {items.length > 0 && (
-        <div className="space-y-4">
-          {/* Action buttons */}
-          <div className="flex flex-col gap-3">
-            <button
-              onClick={() => generateRandom(items)}
-              disabled={isLoading}
-              className="w-full py-4 bg-zinc-800 hover:bg-zinc-700 text-white rounded-2xl font-semibold text-sm transition-colors disabled:opacity-40"
-            >
-              🎲 Outfit Aleatorio
-            </button>
+        <div className="flex flex-col gap-4">
+          {webGpuSupported === true && (
+            <Button onClick={() => generateAI(items)} disabled={isLoading} className="w-full">
+              {t('outfit.ai')}
+            </Button>
+          )}
+          <Button variant="secondary" onClick={() => generateRandom(items)} disabled={isLoading} className="w-full">
+            {t('outfit.random')}
+          </Button>
 
-            {webGpuSupported === true && (
-              <button
-                onClick={() => generateAI(items)}
-                disabled={isLoading}
-                className="w-full py-4 bg-gradient-to-r from-violet-600 to-fuchsia-500 hover:from-violet-500 hover:to-fuchsia-400 text-white rounded-2xl font-semibold text-sm transition-all shadow-lg shadow-violet-900/30 disabled:opacity-40"
-              >
-                ✨ Generar con IA (WebLLM)
-              </button>
-            )}
-          </div>
-
-          {/* Model loading progress */}
           {status.type === 'loading-model' && (
-            <div className="space-y-2">
-              <div className="flex justify-between text-xs text-zinc-400">
-                <span>Cargando modelo de IA...</span>
+            <div className="flex flex-col gap-2 rounded-card bg-surface p-6">
+              <div className="flex justify-between font-dm-sans font-medium text-body-sm leading-body-sm">
+                <span>{t('outfit.loadingModel')}</span>
                 <span>{status.progress}%</span>
               </div>
-              <div className="w-full bg-zinc-800 rounded-full h-2">
+              <div className="h-2 w-full overflow-hidden rounded-pill bg-canvas">
                 <div
-                  className="bg-gradient-to-r from-violet-600 to-fuchsia-500 h-2 rounded-full transition-all duration-300"
+                  className="h-2 rounded-pill bg-ember transition-all duration-300"
                   style={{ width: `${status.progress}%` }}
                 />
               </div>
-              <p className="text-zinc-500 text-[11px] truncate">{status.text}</p>
-              <p className="text-zinc-600 text-[10px]">Se descarga una sola vez (~600MB), luego queda en caché.</p>
+              <p className="truncate font-system text-caption leading-caption text-ink">{status.text}</p>
+              <p className="font-system text-caption leading-caption text-ink/70">
+                {t('outfit.loadingHint')}
+              </p>
             </div>
           )}
 
           {status.type === 'generating' && (
-            <div className="text-center py-4 text-zinc-400 text-sm">
-              <div className="inline-block w-5 h-5 border-2 border-violet-500 border-t-transparent rounded-full animate-spin mr-2" />
-              La IA está eligiendo el outfit...
-            </div>
+            <p className="py-4 text-center font-dm-sans font-medium text-body-sm leading-body-sm text-ink">
+              {t('outfit.generating')}
+            </p>
           )}
 
           {status.type === 'error' && (
-            <div className="bg-red-950 border border-red-800 rounded-2xl p-4 text-red-300 text-sm">
-              {status.message}
+            <div className="rounded-card bg-surface p-6" role="alert">
+              <p className="font-dm-sans font-medium text-body-sm leading-body-sm text-ember">{status.message}</p>
             </div>
           )}
 
@@ -94,13 +87,16 @@ export function OutfitPage() {
               selectedIds={status.ids}
               allItems={items}
               note={status.note}
+              source={status.source}
               onSave={handleSave}
             />
           )}
         </div>
       )}
 
-      {toast && <Toast message={toast} type="success" onClose={() => setToast(null)} />}
+      {toast && (
+        <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />
+      )}
     </div>
   );
 }

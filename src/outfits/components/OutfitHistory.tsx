@@ -2,6 +2,11 @@ import { useEffect, useMemo } from 'react';
 import type { ClothingItem } from '../../wardrobe/types';
 import type { SavedOutfit } from '../types';
 import { BlobImage } from '../../shared/components/BlobImage';
+import { EmptyState } from '../../shared/ui/EmptyState';
+import { Tag } from '../../shared/ui/Tag';
+import { sortItemsByCategory } from '../utils/sanitizeOutfit';
+import { dateLocale, t } from '../../i18n/i18n';
+import { useI18n } from '../../i18n/I18nProvider';
 
 interface OutfitHistoryProps {
   outfits: SavedOutfit[];
@@ -10,80 +15,86 @@ interface OutfitHistoryProps {
   onDelete: (id: string) => void;
 }
 
-const currentYear = new Date().getFullYear();
-
 function formatDate(timestamp: number): string {
   const d = new Date(timestamp);
-  return d.toLocaleDateString('es-AR', {
+  const currentYear = new Date().getFullYear();
+  return d.toLocaleDateString(dateLocale(), {
     day: 'numeric',
     month: 'short',
     ...(d.getFullYear() !== currentYear ? { year: 'numeric' } : {}),
   });
 }
 
-function OutfitCard({ outfit, allItems, onDelete }: {
+function OutfitCard({
+  outfit,
+  allItems,
+  onDelete,
+}: {
   outfit: SavedOutfit;
   allItems: ClothingItem[];
   onDelete: (id: string) => void;
 }) {
-  const items = useMemo(
-    () => outfit.clothingIds.map((id) => allItems.find((i) => i.id === id)).filter(Boolean) as ClothingItem[],
-    [outfit.clothingIds, allItems]
-  );
+  const { locale } = useI18n();
+  const items = useMemo(() => {
+    const found = outfit.clothingIds
+      .map((id) => allItems.find((i) => i.id === id))
+      .filter(Boolean) as ClothingItem[];
+    return sortItemsByCategory(found);
+  }, [outfit.clothingIds, allItems]);
 
   return (
-    <div className="relative bg-zinc-800 rounded-2xl p-3 space-y-2">
-      {/* Delete button */}
+    <article className="relative flex flex-col gap-3 rounded-card bg-surface p-6">
       <button
+        type="button"
         onClick={() => onDelete(outfit.id)}
-        className="absolute top-2 right-2 w-9 h-9 bg-zinc-700 hover:bg-red-600 rounded-full text-zinc-400 hover:text-white text-sm flex items-center justify-center transition-colors z-10"
-        aria-label="Eliminar outfit"
+        className="absolute top-3 right-3 z-10 flex size-11 items-center justify-center rounded-pill bg-canvas text-ink"
+        aria-label={t('favorites.deleteAria')}
       >
         ✕
       </button>
 
-      <div className="flex gap-2 overflow-x-auto no-scrollbar pr-10" style={{ touchAction: 'pan-x' }}>
+      <div className="no-scrollbar flex gap-2 overflow-x-auto pr-12" style={{ touchAction: 'pan-x' }}>
         {items.map((item) => (
           <BlobImage
             key={item.id}
             blob={item.imageBlob}
             alt={item.name}
-            className="w-20 h-28 object-cover rounded-xl flex-shrink-0"
+            className="h-28 w-20 flex-shrink-0 rounded-card object-cover"
           />
         ))}
       </div>
 
       {outfit.aiNote && (
-        <div className="flex items-start gap-1.5 bg-zinc-700/50 rounded-lg px-2.5 py-1.5">
-          <span className="text-xs">✨</span>
-          <p className="text-zinc-400 text-[11px] italic">"{outfit.aiNote}"</p>
+        <div className="flex flex-col gap-2">
+          <Tag>{t('outfit.tagAi')}</Tag>
+          <p className="font-dm-sans font-medium text-body-sm leading-body-sm text-ink">
+            {outfit.aiNote}
+          </p>
         </div>
       )}
 
-      <p className="text-zinc-500 text-xs">{formatDate(outfit.createdAt)}</p>
-    </div>
+      <p className="font-system text-caption leading-caption text-ink" key={locale}>
+        {formatDate(outfit.createdAt)}
+      </p>
+    </article>
   );
 }
 
 export function OutfitHistory({ outfits, allItems, onLoad, onDelete }: OutfitHistoryProps) {
+  const { t: translate } = useI18n();
+
   useEffect(() => {
     onLoad();
   }, [onLoad]);
 
   if (outfits.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 gap-4 text-center">
-        <span className="text-6xl">🌟</span>
-        <div>
-          <p className="text-white font-semibold">Sin outfits guardados</p>
-          <p className="text-zinc-500 text-sm mt-1">Generá un outfit y guardalo para verlo acá.</p>
-        </div>
-      </div>
+      <EmptyState title={translate('favorites.emptyTitle')} body={translate('favorites.emptyBody')} />
     );
   }
 
   return (
-    <div className="space-y-3">
+    <div className="flex flex-col gap-4">
       {outfits.map((outfit) => (
         <OutfitCard key={outfit.id} outfit={outfit} allItems={allItems} onDelete={onDelete} />
       ))}

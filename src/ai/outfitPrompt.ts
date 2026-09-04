@@ -1,4 +1,6 @@
 import type { ClothingItem } from '../wardrobe/types';
+import { t } from '../i18n/i18n';
+import { colorLabel } from '../i18n/labels';
 
 export interface OutfitSelection {
   top?: string;
@@ -11,37 +13,52 @@ export interface OutfitSelection {
 
 function buildWardrobeList(items: ClothingItem[]): string {
   return items
-    .map((i) => `- id:${i.id} | name:"${i.name}" | category:${i.category} | colors:${i.colors.join(',')}`)
+    .map(
+      (i) =>
+        `- id:${i.id} | name:"${i.name}" | category:${i.category} | colors:${i.colors.map(colorLabel).join(',')}`,
+    )
     .join('\n');
 }
 
 export function buildOutfitPrompt(items: ClothingItem[]): string {
-  const list = buildWardrobeList(items);
-  return `You are a fashion stylist. Below is a wardrobe list. Select one item per needed category to form a cohesive outfit. Reply ONLY with valid JSON matching this exact schema (no markdown):
-{"top":"<id or null>","bottom":"<id or null>","shoes":"<id or null>","outer":"<id or null>","accessory":"<id or null>","note":"<one sentence explaining why they work together>"}
+  return t('ai.prompt', { list: buildWardrobeList(items) });
+}
 
-Wardrobe:
-${list}
+export function buildRetryPrompt(): string {
+  return t('ai.retry');
+}
 
-Rules:
-- top and bottom and shoes are required (pick from available items in those categories, or null if none exist)
-- outer and accessory are optional
-- Choose items whose colors complement each other
-- Reply ONLY with the JSON object, nothing else`;
+function coerceId(value: unknown): string | undefined {
+  if (value == null) return undefined;
+  if (typeof value !== 'string') return undefined;
+  const trimmed = value.trim();
+  if (!trimmed || trimmed === 'null' || trimmed === 'undefined') return undefined;
+  return trimmed;
+}
+
+function stripCodeFences(raw: string): string {
+  const fenced = raw.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  if (fenced?.[1]) return fenced[1].trim();
+  return raw.trim();
 }
 
 export function parseOutfitResponse(raw: string): OutfitSelection | null {
   try {
-    const jsonMatch = raw.match(/\{[\s\S]*\}/);
+    const cleaned = stripCodeFences(raw);
+    const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
     if (!jsonMatch) return null;
-    const parsed = JSON.parse(jsonMatch[0]);
+    const parsed = JSON.parse(jsonMatch[0]) as Record<string, unknown>;
+    const note =
+      typeof parsed.note === 'string' && parsed.note.trim()
+        ? parsed.note.trim()
+        : t('ai.defaultNote');
     return {
-      top: parsed.top || undefined,
-      bottom: parsed.bottom || undefined,
-      shoes: parsed.shoes || undefined,
-      outer: parsed.outer || undefined,
-      accessory: parsed.accessory || undefined,
-      note: parsed.note || 'An AI-curated outfit for you.',
+      top: coerceId(parsed.top),
+      bottom: coerceId(parsed.bottom),
+      shoes: coerceId(parsed.shoes),
+      outer: coerceId(parsed.outer),
+      accessory: coerceId(parsed.accessory),
+      note,
     };
   } catch {
     return null;

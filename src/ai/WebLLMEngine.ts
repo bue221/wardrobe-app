@@ -1,25 +1,51 @@
-const CDN = 'https://esm.sh/@mlc-ai/web-llm@0.2.84';
+import type { InitProgressCallback, MLCEngineInterface } from '@mlc-ai/web-llm';
+import type { MessageKey } from '../i18n/messages';
+
 const MODEL_ID = 'Llama-3.2-1B-Instruct-q4f16_1-MLC';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type MLCEngine = any;
-type InitProgressReport = { progress?: number; text?: string };
+let engine: MLCEngineInterface | null = null;
+let loadingPromise: Promise<MLCEngineInterface> | null = null;
 
-let engine: MLCEngine | null = null;
-let loadingPromise: Promise<MLCEngine> | null = null;
+export function toAiErrorKey(err: unknown): MessageKey {
+  const raw = err instanceof Error ? err.message : String(err);
+  console.error('WebLLM failed', err);
 
-export async function getEngine(
-  onProgress: (report: InitProgressReport) => void
-): Promise<MLCEngine> {
+  if (/createRequire|not defined|module is not defined/i.test(raw)) {
+    return 'ai.error.init';
+  }
+  if (/webgpu|gpu|adapter/i.test(raw)) {
+    return 'ai.error.webgpu';
+  }
+  if (/fetch|network|failed to load|Load model/i.test(raw)) {
+    return 'ai.error.network';
+  }
+  return 'ai.error.generic';
+}
+
+async function loadWebLLMRuntime() {
+  const mod = await import('@mlc-ai/web-llm');
+  if (typeof mod.CreateMLCEngine !== 'function') {
+    throw new Error('WebLLM runtime is incomplete');
+  }
+  return mod;
+}
+
+export async function getEngine(onProgress: InitProgressCallback): Promise<MLCEngineInterface> {
   if (engine) return engine;
   if (loadingPromise) return loadingPromise;
 
   loadingPromise = (async () => {
-    const { CreateMLCEngine } = await import(/* @vite-ignore */ CDN);
-    const e = await CreateMLCEngine(MODEL_ID, { initProgressCallback: onProgress });
-    engine = e;
-    loadingPromise = null;
-    return e;
+    try {
+      const { CreateMLCEngine } = await loadWebLLMRuntime();
+      const next = await CreateMLCEngine(MODEL_ID, { initProgressCallback: onProgress });
+      engine = next;
+      return next;
+    } catch (err) {
+      engine = null;
+      throw err;
+    } finally {
+      loadingPromise = null;
+    }
   })();
 
   return loadingPromise;

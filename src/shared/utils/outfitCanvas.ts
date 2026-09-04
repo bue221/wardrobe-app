@@ -1,16 +1,32 @@
 import type { ClothingItem } from '../../wardrobe/types';
+import { sortItemsByCategory } from '../../outfits/utils/sanitizeOutfit';
+import { canvasPaint } from '../../theme/theme';
+import { dateLocale, t } from '../../i18n/i18n';
 
 function loadImage(blob: Blob): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(blob);
     const img = new Image();
-    img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
-    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Failed to load image')); };
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve(img);
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error('Failed to load image'));
+    };
     img.src = url;
   });
 }
 
-function drawRoundedRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
+function drawRoundedRect(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  r: number
+) {
   ctx.beginPath();
   ctx.moveTo(x + r, y);
   ctx.lineTo(x + w - r, y);
@@ -24,7 +40,14 @@ function drawRoundedRect(ctx: CanvasRenderingContext2D, x: number, y: number, w:
   ctx.closePath();
 }
 
-function drawRoundedRectTop(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
+function drawRoundedRectTop(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  r: number
+) {
   ctx.beginPath();
   ctx.moveTo(x + r, y);
   ctx.lineTo(x + w - r, y);
@@ -36,82 +59,114 @@ function drawRoundedRectTop(ctx: CanvasRenderingContext2D, x: number, y: number,
   ctx.closePath();
 }
 
-export async function generateOutfitCanvas(items: ClothingItem[]): Promise<Blob> {
-  const COLS = Math.min(items.length, 3);
-  const ROWS = Math.ceil(items.length / COLS);
+function wrapText(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  maxWidth: number
+): string[] {
+  const words = text.split(/\s+/);
+  const lines: string[] = [];
+  let current = '';
+  for (const word of words) {
+    const next = current ? `${current} ${word}` : word;
+    if (ctx.measureText(next).width <= maxWidth) {
+      current = next;
+    } else {
+      if (current) lines.push(current);
+      current = word;
+    }
+  }
+  if (current) lines.push(current);
+  return lines.slice(0, 3);
+}
+
+export async function generateOutfitCanvas(
+  items: ClothingItem[],
+  note?: string
+): Promise<Blob> {
+  const ordered = sortItemsByCategory(items);
+  const COLS = Math.min(ordered.length, 3);
+  const ROWS = Math.ceil(ordered.length / COLS);
 
   const CARD_W = 260;
   const CARD_H = 320;
   const LABEL_H = 44;
-  const GAP = 14;
-  const PAD = 28;
+  const GAP = 16;
+  const PAD = 40;
   const HEADER_H = 72;
   const FOOTER_H = 48;
+  const NOTE_LINE = 20;
+  const RADIUS = 40;
+
+  // Measure note height after we have a temp context — approximate first
+  const noteBlockH = note?.trim() ? NOTE_LINE * 3 + 16 : 0;
 
   const W = PAD * 2 + COLS * CARD_W + (COLS - 1) * GAP;
-  const H = PAD + HEADER_H + ROWS * (CARD_H + LABEL_H) + (ROWS - 1) * GAP + FOOTER_H;
+  const H =
+    PAD +
+    HEADER_H +
+    ROWS * (CARD_H + LABEL_H) +
+    (ROWS - 1) * GAP +
+    noteBlockH +
+    FOOTER_H;
 
   const canvas = document.createElement('canvas');
   canvas.width = W;
   canvas.height = H;
-  const ctx = canvas.getContext('2d')!;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('Canvas 2D context unavailable');
 
-  // Background gradient
-  const bg = ctx.createLinearGradient(0, 0, W, H);
-  bg.addColorStop(0, '#1c1917'); // warm dark
-  bg.addColorStop(1, '#09090b');
-  ctx.fillStyle = bg;
+  const paint = canvasPaint();
+  ctx.fillStyle = paint.canvas;
   ctx.fillRect(0, 0, W, H);
 
-  // Header title
-  ctx.fillStyle = '#a78bfa'; // violet-400
-  ctx.font = 'bold 22px -apple-system, BlinkMacSystemFont, sans-serif';
+  ctx.fillStyle = paint.ember;
+  ctx.beginPath();
+  ctx.moveTo(PAD, PAD + 36);
+  ctx.lineTo(PAD + 18, PAD + 8);
+  ctx.lineTo(PAD + 36, PAD + 36);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.fillStyle = paint.ink;
+  ctx.font = '400 32px "Bebas Neue", sans-serif';
   ctx.textAlign = 'left';
-  ctx.fillText('👗', PAD, PAD + 32);
+  ctx.fillText(t('outfit.mine'), PAD + 48, PAD + 34);
 
-  ctx.fillStyle = '#f4f4f5';
-  ctx.font = 'bold 22px -apple-system, BlinkMacSystemFont, sans-serif';
-  ctx.fillText('Mi Outfit', PAD + 36, PAD + 32);
+  const now = new Date().toLocaleDateString(dateLocale(), {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+  ctx.font = '500 12px "DM Sans", ui-sans-serif, system-ui, sans-serif';
+  ctx.fillText(now, PAD + 48, PAD + 52);
 
-  const now = new Date().toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' });
-  ctx.fillStyle = '#71717a'; // zinc-500
-  ctx.font = '13px -apple-system, BlinkMacSystemFont, sans-serif';
-  ctx.fillText(now, PAD + 36, PAD + 52);
-
-  // Separator line
-  const lineGrad = ctx.createLinearGradient(PAD, 0, W - PAD, 0);
-  lineGrad.addColorStop(0, '#7c3aed');
-  lineGrad.addColorStop(1, '#a855f7');
-  ctx.strokeStyle = lineGrad;
-  ctx.lineWidth = 2;
+  // Dotted divider (Caldera: dotted, not dashed)
+  ctx.strokeStyle = paint.ink;
+  ctx.setLineDash([1.5, 4]);
+  ctx.lineWidth = 1.5;
+  ctx.lineCap = 'round';
   ctx.beginPath();
   ctx.moveTo(PAD, PAD + HEADER_H - 8);
   ctx.lineTo(W - PAD, PAD + HEADER_H - 8);
   ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.lineCap = 'butt';
 
-  // Load images in parallel
-  const images = await Promise.all(items.map((item) => loadImage(item.imageBlob)));
+  const images = await Promise.all(ordered.map((item) => loadImage(item.imageBlob)));
 
-  // Draw cards
-  for (let i = 0; i < items.length; i++) {
+  for (let i = 0; i < ordered.length; i++) {
     const col = i % COLS;
     const row = Math.floor(i / COLS);
     const x = PAD + col * (CARD_W + GAP);
     const y = PAD + HEADER_H + row * (CARD_H + LABEL_H + GAP);
 
-    // Card shadow (approximate with a slightly bigger dark rect)
-    ctx.fillStyle = 'rgba(0,0,0,0.4)';
-    drawRoundedRect(ctx, x + 3, y + 3, CARD_W, CARD_H + LABEL_H, 16);
+    ctx.fillStyle = paint.surface;
+    drawRoundedRect(ctx, x, y, CARD_W, CARD_H + LABEL_H, RADIUS);
     ctx.fill();
 
-    // Card background
-    ctx.fillStyle = '#27272a'; // zinc-800
-    drawRoundedRect(ctx, x, y, CARD_W, CARD_H + LABEL_H, 16);
-    ctx.fill();
-
-    // Image clipped to top rounded area
     ctx.save();
-    drawRoundedRectTop(ctx, x, y, CARD_W, CARD_H, 16);
+    drawRoundedRectTop(ctx, x, y, CARD_W, CARD_H, RADIUS);
     ctx.clip();
 
     const img = images[i];
@@ -123,20 +178,32 @@ export async function generateOutfitCanvas(items: ClothingItem[]): Promise<Blob>
     ctx.drawImage(img, dx, dy, dw, dh);
     ctx.restore();
 
-    // Label area
-    const name = items[i].name.length > 20 ? items[i].name.slice(0, 18) + '…' : items[i].name;
-    ctx.fillStyle = '#e4e4e7'; // zinc-200
-    ctx.font = 'bold 13px -apple-system, BlinkMacSystemFont, sans-serif';
+    const name =
+      ordered[i].name.length > 20 ? ordered[i].name.slice(0, 18) + '…' : ordered[i].name;
+    ctx.fillStyle = paint.ink;
+    ctx.font = '500 12px "DM Sans", ui-sans-serif, system-ui, sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText(name, x + CARD_W / 2, y + CARD_H + 27);
   }
 
-  // Footer
-  const footerY = H - FOOTER_H + 20;
-  ctx.fillStyle = '#52525b'; // zinc-600
-  ctx.font = '12px -apple-system, BlinkMacSystemFont, sans-serif';
+  let cursorY = PAD + HEADER_H + ROWS * (CARD_H + LABEL_H) + (ROWS - 1) * GAP + 20;
+
+  if (note?.trim()) {
+    ctx.fillStyle = paint.ink;
+    ctx.font = '500 14px "DM Sans", ui-sans-serif, system-ui, sans-serif';
+    ctx.textAlign = 'left';
+    const lines = wrapText(ctx, note.trim(), W - PAD * 2);
+    for (const line of lines) {
+      ctx.fillText(line, PAD, cursorY);
+      cursorY += NOTE_LINE;
+    }
+    cursorY += 8;
+  }
+
+  ctx.fillStyle = paint.ink;
+  ctx.font = '500 12px "DM Sans", ui-sans-serif, system-ui, sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText('Wardrobe App · Tu armario inteligente', W / 2, footerY);
+  ctx.fillText(t('outfit.canvasFooter'), W / 2, H - FOOTER_H + 20);
 
   return new Promise<Blob>((resolve, reject) => {
     canvas.toBlob(
@@ -150,7 +217,7 @@ export async function shareOrDownloadOutfit(blob: Blob) {
   const file = new File([blob], 'outfit.png', { type: 'image/png' });
 
   if (navigator.canShare?.({ files: [file] })) {
-    await navigator.share({ files: [file], title: 'Mi outfit de hoy 👗' });
+    await navigator.share({ files: [file], title: t('outfit.shareTitle') });
     return;
   }
 
