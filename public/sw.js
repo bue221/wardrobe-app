@@ -1,8 +1,27 @@
-const CACHE = 'wardrobe-v1';
+const CACHE = 'wardrobe-caldera-v3';
+
+const PRECACHE = [
+  '/',
+  '/index.html',
+  '/manifest.json',
+  '/favicon.svg',
+  '/icon-192.png',
+  '/icon-512.png',
+  '/icon-maskable-512.png',
+  '/apple-touch-icon.png',
+];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(
-    caches.open(CACHE).then((c) => c.addAll(['/', '/index.html']))
+    caches.open(CACHE).then((c) =>
+      Promise.all(
+        PRECACHE.map((url) =>
+          c.add(url).catch((err) => {
+            console.warn('[sw] precache skip', url, err);
+          })
+        )
+      )
+    )
   );
   self.skipWaiting();
 });

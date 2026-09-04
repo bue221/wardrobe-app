@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <rect width="512" height="512" fill="#e2e2df"/>
+  <!-- Mark in maskable safe zone (~40% of canvas, centered) -->
+  <g transform="translate(144 144) scale(7)">
+    <path d="M2 28 16 6l14 22H2Z" fill="#fc5000"/>
+    <path d="M11 28 16 16l5 12H11Z" fill="#f7f6f2"/>
+  </g>
+</svg>
