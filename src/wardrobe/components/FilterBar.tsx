@@ -7,23 +7,27 @@ interface FilterBarProps {
 }
 
 export function FilterBar({ active, onChange }: FilterBarProps) {
-  const all = [{ value: 'all' as const, label: 'Todo', emoji: '🗂️' }, ...CATEGORIES];
+  const all = [{ value: 'all' as const, label: 'Todo' }, ...CATEGORIES.map((c) => ({ value: c.value, label: c.label }))];
 
   return (
     <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar" style={{ touchAction: 'pan-x' }}>
-      {all.map((cat) => (
-        <button
-          key={cat.value}
-          onClick={() => onChange(cat.value)}
-          className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-            active === cat.value
-              ? 'bg-violet-600 text-white'
-              : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
-          }`}
-        >
-          {cat.emoji} {cat.label}
-        </button>
-      ))}
+      {all.map((cat) => {
+        const isActive = active === cat.value;
+        return (
+          <button
+            key={cat.value}
+            type="button"
+            onClick={() => onChange(cat.value)}
+            className={`flex-shrink-0 px-4 py-2 rounded-[800px] font-body text-body-sm transition-colors ${
+              isActive
+                ? 'bg-ember text-obsidian'
+                : 'bg-limestone text-obsidian hover:bg-obsidian/5'
+            }`}
+          >
+            {cat.label}
+          </button>
+        );
+      })}
     </div>
   );
 }

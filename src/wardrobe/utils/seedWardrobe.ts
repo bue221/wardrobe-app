@@ -15,8 +15,8 @@ const SEED_DATA: SeedDef[] = [
   { name: 'Jeans azul clásico',   category: 'bottom',    colors: ['Azul'],   bgColor: '#3A5280', fgColor: '#ddd', emoji: '👖' },
   { name: 'Pantalón gris',        category: 'bottom',    colors: ['Gris'],   bgColor: '#5A5A5A', fgColor: '#eee', emoji: '👖' },
   { name: 'Zapatillas blancas',   category: 'shoes',     colors: ['Blanco'], bgColor: '#EDEDEA', fgColor: '#555', emoji: '👟' },
-  { name: 'Campera beige',        category: 'jacket',    colors: ['Beige'],  bgColor: '#BEA07A', fgColor: '#333', emoji: '🧥' },
-  { name: 'Vestido verde',        category: 'dress',     colors: ['Verde'],  bgColor: '#2B5130', fgColor: '#ddd', emoji: '👗' },
+  { name: 'Campera beige',        category: 'outer',     colors: ['Beige'],  bgColor: '#BEA07A', fgColor: '#333', emoji: '🧥' },
+  { name: 'Vestido verde',        category: 'top',       colors: ['Verde'],  bgColor: '#2B5130', fgColor: '#ddd', emoji: '👗' },
   { name: 'Bufanda roja',         category: 'accessory', colors: ['Rojo'],   bgColor: '#7A1F1F', fgColor: '#eee', emoji: '🧣' },
 ];
 

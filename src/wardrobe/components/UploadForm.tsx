@@ -2,7 +2,18 @@ import { useState, useRef, type ChangeEvent } from 'react';
 import type { Category } from '../types';
 import { CATEGORIES } from '../types';
 
-const PRESET_COLORS = ['Negro', 'Blanco', 'Gris', 'Azul', 'Rojo', 'Verde', 'Amarillo', 'Rosa', 'Marrón', 'Beige'];
+const PRESET_COLORS = [
+  'Negro',
+  'Blanco',
+  'Gris',
+  'Azul',
+  'Rojo',
+  'Verde',
+  'Amarillo',
+  'Rosa',
+  'Marrón',
+  'Beige',
+];
 
 interface UploadFormProps {
   onAdd: (file: File, name: string, category: Category, colors: string[]) => Promise<void>;
@@ -16,11 +27,17 @@ export function UploadForm({ onAdd, onClose }: UploadFormProps) {
   const [category, setCategory] = useState<Category>('top');
   const [colors, setColors] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
     if (!f) return;
+    if (!f.type.startsWith('image/')) {
+      setError('Elegí un archivo de imagen válido');
+      return;
+    }
+    setError(null);
     setFile(f);
     setPreview(URL.createObjectURL(f));
   }
@@ -32,46 +49,60 @@ export function UploadForm({ onAdd, onClose }: UploadFormProps) {
   }
 
   async function handleSubmit() {
-    if (!file || !name.trim()) return;
+    if (!file || !name.trim()) {
+      setError('Foto y nombre son obligatorios');
+      return;
+    }
     setSaving(true);
+    setError(null);
     try {
       await onAdd(file, name.trim(), category, colors);
       onClose();
+    } catch (err) {
+      console.error('Failed to save clothing item', err);
+      setError('No se pudo guardar la prenda. Probá de nuevo.');
     } finally {
       setSaving(false);
     }
   }
 
   return (
-    <div className="fixed inset-0 bg-black/70 z-40 flex items-end md:items-center justify-center p-0 md:p-4">
+    <div className="fixed inset-0 bg-obsidian/60 z-40 flex items-end md:items-center justify-center p-0 md:p-4">
       <div
-        className="bg-zinc-900 rounded-t-3xl md:rounded-3xl w-full md:max-w-md p-6 space-y-4 max-h-[90dvh] overflow-y-auto"
+        className="bg-pumice rounded-t-[40px] md:rounded-[40px] w-full md:max-w-md p-6 space-y-4 max-h-[90dvh] overflow-y-auto"
         style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom, 1.5rem))' }}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="upload-title"
       >
         <div className="flex justify-between items-center">
-          <h2 className="text-white font-semibold text-lg">Agregar prenda</h2>
+          <h2 id="upload-title" className="font-display text-[32px] leading-none tracking-[0.64px] text-obsidian">
+            AGREGAR
+          </h2>
           <button
+            type="button"
             onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-full bg-zinc-800 text-zinc-400 hover:text-white transition-colors"
+            className="w-10 h-10 flex items-center justify-center rounded-full bg-limestone text-obsidian hover:bg-ember transition-colors"
+            aria-label="Cerrar"
           >
             ✕
           </button>
         </div>
 
-        {/* Image picker */}
-        <div
+        <button
+          type="button"
           onClick={() => inputRef.current?.click()}
-          className="w-full aspect-[4/3] bg-zinc-800 rounded-2xl flex items-center justify-center overflow-hidden cursor-pointer hover:bg-zinc-700 transition-colors"
+          className="w-full aspect-[4/3] bg-limestone rounded-[40px] flex items-center justify-center overflow-hidden hover:brightness-[0.98] transition-[filter]"
         >
           {preview ? (
-            <img src={preview} alt="preview" className="w-full h-full object-cover" />
+            <img src={preview} alt="Vista previa" className="w-full h-full object-cover" />
           ) : (
-            <div className="text-zinc-500 text-center">
-              <div className="text-4xl mb-2">📷</div>
-              <p className="text-sm">Toca para elegir foto</p>
+            <div className="text-center space-y-2 px-4">
+              <div className="mx-auto w-14 h-14 rounded-full bg-ember" aria-hidden="true" />
+              <p className="font-body text-body-sm text-obsidian/70">Toca para elegir foto</p>
             </div>
           )}
-        </div>
+        </button>
         <input
           ref={inputRef}
           type="file"
@@ -80,44 +111,43 @@ export function UploadForm({ onAdd, onClose }: UploadFormProps) {
           className="hidden"
         />
 
-        {/* Name */}
         <input
           type="text"
           placeholder="Nombre (ej: Remera blanca básica)"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="w-full bg-zinc-800 text-white rounded-xl px-4 py-3 text-sm placeholder:text-zinc-500 outline-none focus:ring-2 focus:ring-violet-500"
+          className="input-field"
         />
 
-        {/* Category */}
         <div className="flex gap-2 flex-wrap">
           {CATEGORIES.map((cat) => (
             <button
               key={cat.value}
+              type="button"
               onClick={() => setCategory(cat.value)}
-              className={`px-3 py-2 rounded-full text-sm font-medium transition-colors ${
+              className={`px-3 py-2 rounded-[800px] font-body text-body-sm transition-colors ${
                 category === cat.value
-                  ? 'bg-gradient-to-r from-violet-600 to-fuchsia-500 text-white'
-                  : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
+                  ? 'bg-ember text-obsidian'
+                  : 'bg-limestone text-obsidian hover:bg-obsidian/5'
               }`}
             >
-              {cat.emoji} {cat.label}
+              {cat.label}
             </button>
           ))}
         </div>
 
-        {/* Colors */}
         <div>
-          <p className="text-zinc-400 text-xs mb-2">Colores (opcional)</p>
+          <p className="font-caption text-obsidian/55 mb-2">Colores (opcional)</p>
           <div className="flex gap-2 flex-wrap">
             {PRESET_COLORS.map((color) => (
               <button
                 key={color}
+                type="button"
                 onClick={() => toggleColor(color)}
-                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                className={`px-3 py-1.5 rounded-[800px] font-body text-[12px] transition-colors ${
                   colors.includes(color)
-                    ? 'bg-gradient-to-r from-violet-600 to-fuchsia-500 text-white'
-                    : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
+                    ? 'bg-sulfur text-obsidian'
+                    : 'bg-limestone text-obsidian/70 hover:bg-obsidian/5'
                 }`}
               >
                 {color}
@@ -126,10 +156,17 @@ export function UploadForm({ onAdd, onClose }: UploadFormProps) {
           </div>
         </div>
 
+        {error && (
+          <p className="font-body text-body-sm text-ember" role="alert">
+            {error}
+          </p>
+        )}
+
         <button
+          type="button"
           onClick={handleSubmit}
           disabled={!file || !name.trim() || saving}
-          className="w-full py-3.5 bg-gradient-to-r from-violet-600 to-fuchsia-500 text-white rounded-xl font-semibold text-sm disabled:opacity-40 hover:from-violet-500 hover:to-fuchsia-400 transition-all shadow-lg shadow-violet-900/30"
+          className="btn-primary w-full"
         >
           {saving ? 'Guardando...' : 'Guardar prenda'}
         </button>

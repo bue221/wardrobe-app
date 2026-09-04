@@ -1,61 +1,110 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { LandingPage } from './landing/LandingPage';
 import { WardrobePage } from './wardrobe/WardrobePage';
 import { OutfitPage } from './outfits/OutfitPage';
 import { FavoritesPage } from './outfits/FavoritesPage';
+import { LogoWordmark } from './shared/components/Logo';
 
+type View = 'landing' | 'app';
 type Tab = 'wardrobe' | 'outfit' | 'favorites';
 
-const TABS: { id: Tab; label: string; emoji: string }[] = [
-  { id: 'wardrobe', label: 'Armario', emoji: '👗' },
-  { id: 'outfit', label: 'Outfit', emoji: '✨' },
-  { id: 'favorites', label: 'Guardados', emoji: '⭐' },
+const TABS: { id: Tab; label: string; icon: string }[] = [
+  { id: 'wardrobe', label: 'Armario', icon: 'A' },
+  { id: 'outfit', label: 'Outfit', icon: 'O' },
+  { id: 'favorites', label: 'Guardados', icon: 'G' },
 ];
 
-function NavItem({ tab, active, onClick }: { tab: typeof TABS[number]; active: boolean; onClick: () => void }) {
+function readViewFromHash(): View {
+  const hash = window.location.hash.replace(/^#/, '');
+  return hash.startsWith('/app') ? 'app' : 'landing';
+}
+
+function readTabFromHash(): Tab {
+  const hash = window.location.hash.replace(/^#/, '');
+  if (hash.includes('/outfit')) return 'outfit';
+  if (hash.includes('/favorites')) return 'favorites';
+  return 'wardrobe';
+}
+
+function tabToHash(tab: Tab): string {
+  if (tab === 'outfit') return '#/app/outfit';
+  if (tab === 'favorites') return '#/app/favorites';
+  return '#/app';
+}
+
+function NavIcon({ label, active }: { label: string; active: boolean }) {
   return (
-    <button
-      onClick={onClick}
-      className={`flex flex-col items-center gap-0.5 px-5 py-2.5 rounded-2xl transition-all ${
-        active ? 'text-violet-400 bg-zinc-700/50' : 'text-zinc-500 hover:text-zinc-300'
+    <span
+      className={`inline-flex h-8 w-8 items-center justify-center rounded-full text-[13px] font-body transition-colors ${
+        active ? 'bg-ember text-obsidian' : 'bg-limestone text-obsidian/70'
       }`}
     >
-      <span className="text-xl">{tab.emoji}</span>
-      <span className="text-[11px] font-medium">{tab.label}</span>
-    </button>
+      {label}
+    </span>
   );
 }
 
-export default function App() {
-  const [activeTab, setActiveTab] = useState<Tab>('wardrobe');
-
+function AppShell({
+  activeTab,
+  onTabChange,
+  onBackHome,
+}: {
+  activeTab: Tab;
+  onTabChange: (tab: Tab) => void;
+  onBackHome: () => void;
+}) {
   return (
-    <div className="min-h-dvh bg-zinc-950 text-white flex">
+    <div className="min-h-dvh bg-pumice text-obsidian flex">
       {/* Desktop sidebar */}
-      <aside className="hidden md:flex flex-col w-56 bg-zinc-900 border-r border-zinc-800 p-6 gap-2 sticky top-0 h-screen">
-        <div className="mb-6">
-          <h1 className="font-bold text-lg bg-gradient-to-r from-violet-400 to-fuchsia-400 bg-clip-text text-transparent">
-            👗 Wardrobe
-          </h1>
-          <p className="text-zinc-500 text-xs mt-1">Tu armario inteligente</p>
+      <aside className="hidden md:flex flex-col w-64 sticky top-0 h-screen p-6 gap-3">
+        <div className="card-limestone !p-5 mb-2 space-y-2">
+          <LogoWordmark onClick={onBackHome} className="text-left" />
+          <p className="font-body text-body-sm text-obsidian/60">
+            Tu armario inteligente
+          </p>
         </div>
-        {TABS.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all text-left ${
-              activeTab === tab.id
-                ? 'bg-gradient-to-r from-violet-600 to-fuchsia-500 text-white shadow-lg shadow-violet-900/30'
-                : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'
-            }`}
-          >
-            <span className="text-lg">{tab.emoji}</span>
-            {tab.label}
-          </button>
-        ))}
+
+        <div className="flex flex-col gap-2">
+          {TABS.map((tab) => {
+            const active = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => onTabChange(tab.id)}
+                className={`flex items-center gap-3 px-5 py-3 text-left font-body text-body transition-colors ${
+                  active
+                    ? 'bg-ember text-obsidian rounded-[40px]'
+                    : 'bg-transparent text-obsidian hover:bg-limestone rounded-[40px]'
+                }`}
+              >
+                <NavIcon label={tab.icon} active={active} />
+                {tab.label}
+              </button>
+            );
+          })}
+        </div>
+
+        <button
+          type="button"
+          onClick={onBackHome}
+          className="btn-ghost mt-auto self-start text-obsidian/70 hover:text-obsidian"
+        >
+          ← Landing
+        </button>
       </aside>
 
-      {/* Main content */}
+      {/* Main */}
       <main className="flex-1 min-h-dvh md:min-h-0">
+        <div className="md:hidden sticky top-0 z-20 bg-pumice/95 backdrop-blur-sm px-4 pt-3 pb-2">
+          <div className="nav-pill justify-between">
+            <LogoWordmark onClick={onBackHome} />
+            <button type="button" onClick={onBackHome} className="btn-ghost text-body-sm">
+              Home
+            </button>
+          </div>
+        </div>
+
         <div className="p-4 md:p-8 pb-28 md:pb-8 max-w-3xl w-full mx-auto">
           {activeTab === 'wardrobe' && <WardrobePage />}
           {activeTab === 'outfit' && <OutfitPage />}
@@ -63,20 +112,76 @@ export default function App() {
         </div>
       </main>
 
-      {/* Mobile bottom nav — fixed, outside main so it never affects layout */}
+      {/* Mobile bottom nav */}
       <nav
-        className="md:hidden fixed bottom-0 left-0 right-0 bg-zinc-900/95 backdrop-blur-md border-t border-zinc-800 flex justify-around pt-1 z-30"
-        style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+        className="md:hidden fixed bottom-0 left-0 right-0 z-30 px-3 pt-2"
+        style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom, 0px))' }}
       >
-        {TABS.map((tab) => (
-          <NavItem
-            key={tab.id}
-            tab={tab}
-            active={activeTab === tab.id}
-            onClick={() => setActiveTab(tab.id)}
-          />
-        ))}
+        <div className="nav-pill justify-around !px-2 !py-2">
+          {TABS.map((tab) => {
+            const active = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => onTabChange(tab.id)}
+                className={`flex flex-col items-center gap-1 min-w-[72px] py-1.5 px-3 rounded-[800px] transition-colors ${
+                  active ? 'bg-ember' : 'bg-transparent'
+                }`}
+              >
+                <NavIcon label={tab.icon} active={active} />
+                <span className="font-body text-[11px] text-obsidian">{tab.label}</span>
+              </button>
+            );
+          })}
+        </div>
       </nav>
     </div>
+  );
+}
+
+export default function App() {
+  const [view, setView] = useState<View>(() =>
+    typeof window !== 'undefined' ? readViewFromHash() : 'landing'
+  );
+  const [activeTab, setActiveTab] = useState<Tab>(() =>
+    typeof window !== 'undefined' ? readTabFromHash() : 'wardrobe'
+  );
+
+  useEffect(() => {
+    function onHashChange() {
+      setView(readViewFromHash());
+      setActiveTab(readTabFromHash());
+    }
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, []);
+
+  function enterApp(tab: Tab = 'wardrobe') {
+    window.location.hash = tabToHash(tab);
+    setView('app');
+    setActiveTab(tab);
+  }
+
+  function goLanding() {
+    window.location.hash = '#/';
+    setView('landing');
+  }
+
+  function changeTab(tab: Tab) {
+    window.location.hash = tabToHash(tab);
+    setActiveTab(tab);
+  }
+
+  if (view === 'landing') {
+    return <LandingPage onEnterApp={() => enterApp('wardrobe')} />;
+  }
+
+  return (
+    <AppShell
+      activeTab={activeTab}
+      onTabChange={changeTab}
+      onBackHome={goLanding}
+    />
   );
 }

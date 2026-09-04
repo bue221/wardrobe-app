@@ -21,7 +21,11 @@ function formatDate(timestamp: number): string {
   });
 }
 
-function OutfitCard({ outfit, allItems, onDelete }: {
+function OutfitCard({
+  outfit,
+  allItems,
+  onDelete,
+}: {
   outfit: SavedOutfit;
   allItems: ClothingItem[];
   onDelete: (id: string) => void;
@@ -32,11 +36,11 @@ function OutfitCard({ outfit, allItems, onDelete }: {
   );
 
   return (
-    <div className="relative bg-zinc-800 rounded-2xl p-3 space-y-2">
-      {/* Delete button */}
+    <article className="relative card-limestone !p-4 space-y-3">
       <button
+        type="button"
         onClick={() => onDelete(outfit.id)}
-        className="absolute top-2 right-2 w-9 h-9 bg-zinc-700 hover:bg-red-600 rounded-full text-zinc-400 hover:text-white text-sm flex items-center justify-center transition-colors z-10"
+        className="absolute top-3 right-3 w-10 h-10 bg-pumice hover:bg-ember rounded-full text-obsidian text-sm flex items-center justify-center transition-colors z-10"
         aria-label="Eliminar outfit"
       >
         ✕
@@ -48,20 +52,19 @@ function OutfitCard({ outfit, allItems, onDelete }: {
             key={item.id}
             blob={item.imageBlob}
             alt={item.name}
-            className="w-20 h-28 object-cover rounded-xl flex-shrink-0"
+            className="w-20 h-28 object-cover rounded-[16px] flex-shrink-0"
           />
         ))}
       </div>
 
       {outfit.aiNote && (
-        <div className="flex items-start gap-1.5 bg-zinc-700/50 rounded-lg px-2.5 py-1.5">
-          <span className="text-xs">✨</span>
-          <p className="text-zinc-400 text-[11px] italic">"{outfit.aiNote}"</p>
+        <div className="rounded-[16px] bg-pumice px-3 py-2">
+          <p className="font-body text-[11px] text-obsidian/65 italic">&ldquo;{outfit.aiNote}&rdquo;</p>
         </div>
       )}
 
-      <p className="text-zinc-500 text-xs">{formatDate(outfit.createdAt)}</p>
-    </div>
+      <p className="font-caption text-obsidian/50">{formatDate(outfit.createdAt)}</p>
+    </article>
   );
 }
 
@@ -72,11 +75,13 @@ export function OutfitHistory({ outfits, allItems, onLoad, onDelete }: OutfitHis
 
   if (outfits.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 gap-4 text-center">
-        <span className="text-6xl">🌟</span>
+      <div className="card-limestone flex flex-col items-center justify-center py-16 gap-4 text-center">
+        <div className="halftone-block w-16 h-16" aria-hidden="true" />
         <div>
-          <p className="text-white font-semibold">Sin outfits guardados</p>
-          <p className="text-zinc-500 text-sm mt-1">Generá un outfit y guardalo para verlo acá.</p>
+          <p className="font-display text-[26px] text-obsidian">SIN GUARDADOS</p>
+          <p className="font-body text-body-sm text-obsidian/60 mt-2 max-w-xs">
+            Generá un outfit y guardalo para verlo acá.
+          </p>
         </div>
       </div>
     );

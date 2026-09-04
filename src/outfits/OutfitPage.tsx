@@ -16,75 +16,89 @@ export function OutfitPage() {
 
   async function handleSave() {
     if (status.type !== 'done') return;
-    await saveCurrentOutfit(status.ids, status.note);
-    setToast('Outfit guardado ✓');
-    reset();
+    try {
+      await saveCurrentOutfit(status.ids, status.note);
+      setToast('Outfit guardado');
+      reset();
+    } catch (err) {
+      console.error('Failed to save outfit', err);
+      setToast('No se pudo guardar el outfit');
+    }
   }
 
   return (
     <div className="space-y-6">
-      <h1 className="text-white text-xl font-bold">Generador de Outfits</h1>
+      <h1 className="font-display text-[32px] md:text-[48px] leading-[1] tracking-[0.64px] text-obsidian">
+        GENERADOR
+      </h1>
 
       {items.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-20 gap-4 text-center">
-          <span className="text-6xl">✨</span>
+        <div className="card-limestone flex flex-col items-center justify-center py-16 gap-4 text-center">
+          <div className="w-16 h-16 rounded-full bg-ember" aria-hidden="true" />
           <div>
-            <p className="text-white font-semibold">Todavía no tenés prendas</p>
-            <p className="text-zinc-500 text-sm mt-1">Primero agregá ropa en tu armario para poder generar outfits.</p>
+            <p className="font-display text-[26px] text-obsidian">SIN PRENDAS</p>
+            <p className="font-body text-body-sm text-obsidian/60 mt-2 max-w-xs">
+              Primero agregá ropa en tu armario para poder generar outfits.
+            </p>
           </div>
         </div>
       )}
 
       {items.length > 0 && (
         <div className="space-y-4">
-          {/* Action buttons */}
           <div className="flex flex-col gap-3">
             <button
+              type="button"
               onClick={() => generateRandom(items)}
               disabled={isLoading}
-              className="w-full py-4 bg-zinc-800 hover:bg-zinc-700 text-white rounded-2xl font-semibold text-sm transition-colors disabled:opacity-40"
+              className="btn-secondary w-full !py-4"
             >
-              🎲 Outfit Aleatorio
+              Outfit aleatorio
             </button>
 
             {webGpuSupported === true && (
               <button
+                type="button"
                 onClick={() => generateAI(items)}
                 disabled={isLoading}
-                className="w-full py-4 bg-gradient-to-r from-violet-600 to-fuchsia-500 hover:from-violet-500 hover:to-fuchsia-400 text-white rounded-2xl font-semibold text-sm transition-all shadow-lg shadow-violet-900/30 disabled:opacity-40"
+                className="btn-primary w-full !py-4"
               >
-                ✨ Generar con IA (WebLLM)
+                Generar con IA (WebLLM)
               </button>
             )}
           </div>
 
-          {/* Model loading progress */}
           {status.type === 'loading-model' && (
-            <div className="space-y-2">
-              <div className="flex justify-between text-xs text-zinc-400">
+            <div className="card-limestone !p-6 space-y-3">
+              <div className="flex justify-between font-caption text-obsidian/60">
                 <span>Cargando modelo de IA...</span>
                 <span>{status.progress}%</span>
               </div>
-              <div className="w-full bg-zinc-800 rounded-full h-2">
+              <div className="w-full bg-pumice rounded-[800px] h-2 overflow-hidden">
                 <div
-                  className="bg-gradient-to-r from-violet-600 to-fuchsia-500 h-2 rounded-full transition-all duration-300"
+                  className="bg-ember h-2 rounded-[800px] transition-all duration-300"
                   style={{ width: `${status.progress}%` }}
                 />
               </div>
-              <p className="text-zinc-500 text-[11px] truncate">{status.text}</p>
-              <p className="text-zinc-600 text-[10px]">Se descarga una sola vez (~600MB), luego queda en caché.</p>
+              <p className="font-caption text-obsidian/45 truncate">{status.text}</p>
+              <p className="font-caption text-obsidian/40">
+                Se descarga una sola vez (~600MB), luego queda en caché.
+              </p>
             </div>
           )}
 
           {status.type === 'generating' && (
-            <div className="text-center py-4 text-zinc-400 text-sm">
-              <div className="inline-block w-5 h-5 border-2 border-violet-500 border-t-transparent rounded-full animate-spin mr-2" />
+            <div className="text-center py-4 font-body text-body-sm text-obsidian/65">
+              <span
+                className="inline-block w-5 h-5 border-2 border-ember border-t-transparent rounded-full animate-spin mr-2 align-middle"
+                aria-hidden="true"
+              />
               La IA está eligiendo el outfit...
             </div>
           )}
 
           {status.type === 'error' && (
-            <div className="bg-red-950 border border-red-800 rounded-2xl p-4 text-red-300 text-sm">
+            <div className="rounded-[40px] bg-obsidian text-chalk p-5 font-body text-body-sm" role="alert">
               {status.message}
             </div>
           )}
@@ -100,7 +114,13 @@ export function OutfitPage() {
         </div>
       )}
 
-      {toast && <Toast message={toast} type="success" onClose={() => setToast(null)} />}
+      {toast && (
+        <Toast
+          message={toast}
+          type={toast.includes('No se pudo') ? 'error' : 'success'}
+          onClose={() => setToast(null)}
+        />
+      )}
     </div>
   );
 }

@@ -13,16 +13,17 @@ export function Toast({ message, type = 'info', onClose, duration = 3500 }: Toas
     return () => clearTimeout(t);
   }, [onClose, duration]);
 
-  const colors = {
-    error: 'bg-red-600',
-    success: 'bg-emerald-600',
-    info: 'bg-slate-700',
+  const surfaces = {
+    error: 'bg-obsidian text-chalk',
+    success: 'bg-ember text-obsidian',
+    info: 'bg-limestone text-obsidian',
   };
 
   return (
     <div
-      className={`fixed left-1/2 -translate-x-1/2 z-50 px-4 py-3 rounded-xl text-white text-sm shadow-xl max-w-xs text-center ${colors[type]}`}
+      className={`fixed left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-[800px] font-body text-body-sm max-w-xs text-center ${surfaces[type]}`}
       style={{ bottom: 'calc(6rem + env(safe-area-inset-bottom, 0px))' }}
+      role="status"
     >
       {message}
     </div>

@@ -15,6 +15,7 @@ export function OutfitDisplay({ selectedIds, allItems, note, onSave }: OutfitDis
   const [generating, setGenerating] = useState(false);
   const [imageBlob, setImageBlob] = useState<Blob | null>(null);
   const [sharing, setSharing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const selectedItems = useMemo(
     () => selectedIds.map((id) => allItems.find((i) => i.id === id)).filter(Boolean) as ClothingItem[],
@@ -23,11 +24,15 @@ export function OutfitDisplay({ selectedIds, allItems, note, onSave }: OutfitDis
 
   async function handleGenerateImage() {
     setGenerating(true);
+    setError(null);
     try {
       const blob = await generateOutfitCanvas(selectedItems);
       if (previewUrl) URL.revokeObjectURL(previewUrl);
       setImageBlob(blob);
       setPreviewUrl(URL.createObjectURL(blob));
+    } catch (err) {
+      console.error('Failed to generate outfit image', err);
+      setError('No se pudo generar la imagen del outfit');
     } finally {
       setGenerating(false);
     }
@@ -36,8 +41,12 @@ export function OutfitDisplay({ selectedIds, allItems, note, onSave }: OutfitDis
   async function handleShare() {
     if (!imageBlob) return;
     setSharing(true);
+    setError(null);
     try {
       await shareOrDownloadOutfit(imageBlob);
+    } catch (err) {
+      console.error('Failed to share outfit', err);
+      setError('No se pudo compartir. Intentá descargar de nuevo.');
     } finally {
       setSharing(false);
     }
@@ -48,76 +57,72 @@ export function OutfitDisplay({ selectedIds, allItems, note, onSave }: OutfitDis
   const colClass = selectedItems.length >= 4 ? 'grid-cols-4' : 'grid-cols-3';
 
   return (
-    <div className="bg-zinc-800 rounded-2xl p-4 space-y-4">
-      {/* Clothing grid */}
+    <div className="card-limestone !p-5 md:!p-8 space-y-4">
       <div className={`grid ${colClass} gap-2`}>
         {selectedItems.map((item) => (
-          <div key={item.id} className="rounded-xl overflow-hidden bg-zinc-700">
+          <div key={item.id} className="rounded-[20px] overflow-hidden bg-pumice">
             <BlobImage blob={item.imageBlob} alt={item.name} className="w-full aspect-[3/4] object-cover" />
-            <p className="text-[10px] text-zinc-400 text-center py-1 truncate px-1">{item.name}</p>
+            <p className="font-caption text-obsidian/55 text-center py-1.5 truncate px-1">{item.name}</p>
           </div>
         ))}
       </div>
 
       {note && (
-        <div className="flex items-start gap-2 bg-zinc-700/50 rounded-xl px-3 py-2">
-          <span className="text-sm">✨</span>
-          <p className="text-zinc-300 text-sm italic">"{note}"</p>
+        <div className="rounded-[20px] bg-pumice px-4 py-3">
+          <p className="font-body text-body-sm text-obsidian/80 italic">&ldquo;{note}&rdquo;</p>
         </div>
       )}
 
-      {/* Generate image button */}
+      {error && (
+        <p className="font-body text-body-sm text-ember" role="alert">
+          {error}
+        </p>
+      )}
+
       {!previewUrl && (
         <button
+          type="button"
           onClick={handleGenerateImage}
           disabled={generating}
-          className="w-full py-3 bg-zinc-700 hover:bg-zinc-600 text-white rounded-xl text-sm font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+          className="btn-secondary w-full"
         >
-          {generating ? (
-            <>
-              <span className="w-4 h-4 border-2 border-zinc-400 border-t-transparent rounded-full animate-spin" />
-              Generando imagen...
-            </>
-          ) : (
-            '🎨 Ver como imagen'
-          )}
+          {generating ? 'Generando imagen...' : 'Ver como imagen'}
         </button>
       )}
 
-      {/* Generated preview */}
       {previewUrl && (
         <div className="space-y-3">
           <img
             src={previewUrl}
             alt="Outfit generado"
-            className="w-full rounded-2xl border border-zinc-700 shadow-xl"
+            className="w-full rounded-[40px]"
           />
           <div className="flex gap-2">
             <button
+              type="button"
               onClick={handleShare}
               disabled={sharing}
-              className="flex-1 py-3 bg-gradient-to-r from-violet-600 to-fuchsia-500 hover:from-violet-500 hover:to-fuchsia-400 text-white rounded-xl text-sm font-semibold transition-all shadow-lg shadow-violet-900/30 disabled:opacity-50"
+              className="btn-primary flex-1"
             >
-              {sharing ? 'Compartiendo...' : '📤 Compartir'}
+              {sharing ? 'Compartiendo...' : 'Compartir'}
             </button>
             <button
+              type="button"
               onClick={handleGenerateImage}
               disabled={generating}
-              className="px-4 py-3 bg-zinc-700 hover:bg-zinc-600 text-zinc-300 rounded-xl text-sm transition-colors disabled:opacity-50"
+              className="btn-secondary !px-4"
               title="Regenerar"
+              aria-label="Regenerar imagen"
             >
-              🔄
+              ↻
             </button>
           </div>
         </div>
       )}
 
       {onSave && (
-        <button
-          onClick={onSave}
-          className="w-full py-3 bg-gradient-to-r from-violet-600 to-fuchsia-500 hover:from-violet-500 hover:to-fuchsia-400 text-white rounded-xl text-sm font-semibold transition-all shadow-lg shadow-violet-900/30"
-        >
-          💾 Guardar outfit
+        <button type="button" onClick={onSave} className="btn-primary w-full">
+          Guardar outfit
         </button>
       )}
     </div>
