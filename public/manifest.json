@@ -1,11 +1,11 @@
 {
-  "name": "Wardrobe App",
+  "name": "Wardrobe",
   "short_name": "Wardrobe",
-  "description": "Tu armario inteligente con IA",
-  "start_url": "/",
+  "description": "Tu armario inteligente con IA — diseño Caldera",
+  "start_url": "/#/app",
   "display": "standalone",
-  "background_color": "#09090b",
-  "theme_color": "#09090b",
+  "background_color": "#e2e2df",
+  "theme_color": "#e2e2df",
   "orientation": "portrait-primary",
   "icons": [
     {

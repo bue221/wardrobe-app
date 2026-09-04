@@ -10,20 +10,33 @@ export function FavoritesPage() {
   const [toast, setToast] = useState<string | null>(null);
 
   async function handleDelete(id: string) {
-    await removeSavedOutfit(id);
-    setToast('Outfit eliminado');
+    try {
+      await removeSavedOutfit(id);
+      setToast('Outfit eliminado');
+    } catch (err) {
+      console.error('Failed to delete outfit', err);
+      setToast('No se pudo eliminar');
+    }
   }
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-white text-xl font-bold">Favoritos</h1>
+    <div className="space-y-5">
+      <h1 className="font-display text-[32px] md:text-[48px] leading-[1] tracking-[0.64px] text-obsidian">
+        FAVORITOS
+      </h1>
       <OutfitHistory
         outfits={savedOutfits}
         allItems={items}
         onLoad={loadSavedOutfits}
         onDelete={handleDelete}
       />
-      {toast && <Toast message={toast} onClose={() => setToast(null)} />}
+      {toast && (
+        <Toast
+          message={toast}
+          type={toast.includes('No se pudo') ? 'error' : 'info'}
+          onClose={() => setToast(null)}
+        />
+      )}
     </div>
   );
 }
